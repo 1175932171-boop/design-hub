@@ -3604,8 +3604,6 @@ function openAddAccPanel() {
   closeCreatedAdsPanel();
   // 清空表单
   ['newAccId','newAccName'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
-  // 重置 OS chips
-  document.querySelectorAll('#newAccOsChips .tpl-dp-chip').forEach((c,i)=>c.classList.toggle('sel',i===0));
   document.getElementById('addAccPanel').classList.add('open');
   // 对话区左移（与模板配置面板一致）
   const hw = document.getElementById('heroWrap');
@@ -3623,13 +3621,9 @@ function closeAddAccPanel() {
     _shiftFixedElems(false);
   }
 }
-function selNewAccOs(el) {
-  document.querySelectorAll('#newAccOsChips .tpl-dp-chip').forEach(c=>c.classList.remove('sel'));
-  el.classList.add('sel');
-}
 function submitNewAccount() {
   const raw = (document.getElementById('newAccId').value || '').trim();
-  const os  = document.querySelector('#newAccOsChips .tpl-dp-chip.sel')?.textContent.trim() || '安卓';
+  const os  = tplState?.os || '安卓';
   if (!raw) { document.getElementById('newAccId').focus(); return; }
 
   // 解析逗号/换行分隔的多账户ID（仅保留数字）
@@ -6388,14 +6382,7 @@ expandSuper();
       style="resize:vertical;font-family:monospace;"></textarea>
     <div style="font-size:11px;color:#8C8C8C;margin-top:4px;">每行或用逗号分隔，输入多个账户ID</div>
   </div>
-  <div class="add-acc-field">
-    <label class="tpl-dp-label">操作系统</label>
-    <div class="tpl-dp-chips" id="newAccOsChips">
-      <span class="tpl-dp-chip sel" onclick="selNewAccOs(this)">安卓</span>
-      <span class="tpl-dp-chip"     onclick="selNewAccOs(this)">iOS</span>
-      <span class="tpl-dp-chip"     onclick="selNewAccOs(this)">全部</span>
-    </div>
-  </div>
+
   <button class="tpl-dp-use-btn" onclick="submitNewAccount()" style="margin-top:4px;">
     确认添加
   </button>
