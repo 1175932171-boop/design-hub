@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 20px; background: #fff; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<svg width="940" height="1185" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ah-danger" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#dc2626" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ah-success" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#16a34a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="940" height="1185" fill="#f9fafb"/>
+
+  <!-- ===== 标题 ===== -->
+  <text x="470" y="28" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">拉新AAC任务 — 质量分计算逻辑流程</text>
+
+  <!-- ===== AAC任务 入口 ===== -->
+  <rect x="380" y="40" width="180" height="36" rx="6" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="470" y="58" text-anchor="middle" dominant-baseline="middle" fill="#1e1b4b" font-size="13" font-weight="600">AAC任务</text>
+
+  <!-- start → hasContract -->
+  <path d="M 470 76 L 470 104" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 是否有合同? 菱形 -->
+  <polygon points="470,104 560,132 470,160 380,132" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="470" y="129" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="12" font-weight="600">是否有合同?</text>
+
+  <!-- → 无合同 左 -->
+  <path d="M 380 132 L 240 202" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <text x="292" y="157" text-anchor="middle" fill="#374151" font-size="11" font-weight="600">无合同</text>
+
+  <!-- → 有合同 右 -->
+  <path d="M 560 132 L 700 202" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <text x="648" y="157" text-anchor="middle" fill="#374151" font-size="11" font-weight="600">有合同</text>
+
+  <!-- 默认CPM 警告框 -->
+  <rect x="160" y="202" width="160" height="36" rx="6" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="240" y="220" text-anchor="middle" dominant-baseline="middle" fill="#713f12" font-size="12" font-weight="500">默认 CPM 结算</text>
+
+  <!-- 按合同判断 -->
+  <rect x="600" y="202" width="200" height="36" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="700" y="220" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="12" font-weight="500">按合同判断结算方式</text>
+
+  <!-- 汇聚到结算方式判断 -->
+  <path d="M 240 238 L 240 300 L 390 320" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <path d="M 700 238 L 700 300 L 550 320" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 结算方式? 菱形 -->
+  <polygon points="470,294 550,320 470,346 390,320" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="470" y="320" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="12" font-weight="600">结算方式?</text>
+
+  <!-- → CPM分支 -->
+  <path d="M 390 320 L 240 390" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <text x="300" y="346" text-anchor="middle" fill="#374151" font-size="11" font-weight="600">CPM</text>
+
+  <!-- → CPA分支 -->
+  <path d="M 550 320 L 720 390" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <text x="655" y="346" text-anchor="middle" fill="#374151" font-size="11" font-weight="600">CPA</text>
+
+  <!-- 中间虚线分隔 -->
+  <line x1="470" y1="370" x2="470" y2="1065" stroke="#d1d5db" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- 分支标签 -->
+  <text x="230" y="380" text-anchor="middle" fill="#4f46e5" font-size="11" font-weight="700">◀ CPM 结算路径</text>
+  <text x="730" y="380" text-anchor="middle" fill="#15803d" font-size="11" font-weight="700">CPA 结算路径 ▶</text>
+
+  <!-- ===== CPM分支 (左侧, x=240) ===== -->
+
+  <!-- 当做拉新任务处理 -->
+  <rect x="135" y="398" width="210" height="36" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="240" y="416" text-anchor="middle" dominant-baseline="middle" fill="#1e3a8a" font-size="12" font-weight="500">当做拉新任务处理</text>
+  <path d="M 240 434 L 240 462" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 目标用户：新用户 -->
+  <rect x="143" y="462" width="195" height="36" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="240" y="480" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="12" font-weight="500">目标用户：新用户</text>
+  <path d="M 240 498 L 240 524" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 质量分分母配置 菱形 -->
+  <polygon points="240,524 348,554 240,584 132,554" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="240" y="547" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="11" font-weight="600">质量分分母</text>
+  <text x="240" y="562" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="11" font-weight="600">配置范围?</text>
+
+  <!-- → 同任务 -->
+  <path d="M 132 554 L 105 606" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <text x="85" y="574" text-anchor="middle" fill="#374151" font-size="11" font-weight="600">同任务</text>
+
+  <!-- → 同渠道同任务 -->
+  <path d="M 348 554 L 378 606" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <text x="405" y="572" text-anchor="middle" fill="#374151" font-size="10" font-weight="600">同渠道同任务</text>
+
+  <!-- sameTask -->
+  <rect x="33" y="606" width="145" height="52" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="105" y="625" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">分母范围：</text>
+  <text x="105" y="642" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">同任务类型=拉新</text>
+
+  <!-- sameChannelTask -->
+  <rect x="298" y="606" width="165" height="52" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="380" y="625" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">分母范围：同渠道</text>
+  <text x="380" y="642" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">同任务类型=拉新</text>
+
+  <!-- 合并到质量分分母 -->
+  <path d="M 105 658 L 105 748 L 197 760" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+  <path d="M 380 658 L 380 748 L 283 760" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 质量分分母 -->
+  <rect x="120" y="760" width="240" height="36" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="240" y="778" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">质量分分母：上述拉新类型任务</text>
+  <path d="M 240 796 L 240 822" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- B浓度分母 -->
+  <rect x="120" y="822" width="240" height="52" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="240" y="841" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">B浓度分母：同二级渠道</text>
+  <text x="240" y="858" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">任务类型=拉新的B浓度</text>
+  <path d="M 240 874 L 240 903" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 同二级渠道是否有拉新任务 菱形 -->
+  <polygon points="240,903 354,933 240,963 126,933" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="240" y="926" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="11" font-weight="600">同二级渠道</text>
+  <text x="240" y="941" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="11" font-weight="600">是否有拉新任务?</text>
+
+  <!-- → 有 -->
+  <path d="M 126 933 L 88 1001" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah-success)"/>
+  <text x="78" y="960" text-anchor="middle" fill="#15803d" font-size="11" font-weight="700">有</text>
+
+  <!-- → 无 -->
+  <path d="M 354 933 L 415 1001" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah-danger)"/>
+  <text x="408" y="958" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="700">无</text>
+
+  <!-- 正常计算质量分 (CPM) -->
+  <rect x="10" y="1001" width="155" height="36" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="88" y="1019" text-anchor="middle" dominant-baseline="middle" fill="#14532d" font-size="11" font-weight="500">正常计算质量分</text>
+
+  <!-- 分母不存在 危险框 -->
+  <rect x="320" y="1001" width="205" height="52" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="422" y="1020" text-anchor="middle" dominant-baseline="middle" fill="#7f1d1d" font-size="12" font-weight="600">分母不存在</text>
+  <text x="422" y="1038" text-anchor="middle" dominant-baseline="middle" fill="#dc2626" font-size="12" font-weight="600">-> 质量分无法计算</text>
+
+  <!-- ===== CPA分支 (右侧, x=720) ===== -->
+
+  <!-- 目标用户：年新买家 -->
+  <rect x="610" y="398" width="220" height="36" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="720" y="416" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="12" font-weight="500">目标用户：年新买家</text>
+  <path d="M 720 434 L 720 474" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 质量分分母 CPA -->
+  <rect x="596" y="474" width="248" height="62" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="720" y="493" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">质量分分母：同二级渠道</text>
+  <text x="720" y="509" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">任务类型=AAC</text>
+  <text x="720" y="525" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">的任务平均B浓度</text>
+  <path d="M 720 536 L 720 582" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- B浓度分母 CPA -->
+  <rect x="596" y="582" width="248" height="62" rx="6" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5"/>
+  <text x="720" y="601" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">B浓度分母：同二级渠道</text>
+  <text x="720" y="617" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">任务类型=AAC</text>
+  <text x="720" y="633" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="11" font-weight="500">的任务平均B浓度</text>
+  <path d="M 720 644 L 720 690" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 正常计算质量分 (CPA) -->
+  <rect x="640" y="690" width="160" height="36" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="720" y="708" text-anchor="middle" dominant-baseline="middle" fill="#14532d" font-size="12" font-weight="500">正常计算质量分</text>
+
+  <!-- ===== 分割线 ===== -->
+  <line x1="20" y1="1082" x2="920" y2="1082" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 4"/>
+
+  <!-- ===== 当前案例根因说明 ===== -->
+  <rect x="20" y="1096" width="900" height="72" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="470" y="1118" text-anchor="middle" dominant-baseline="middle" fill="#111827" font-size="13" font-weight="700">当前案例（DSP代理）根因分析</text>
+  <text x="470" y="1144" text-anchor="middle" dominant-baseline="middle" fill="#dc2626" font-size="12" font-weight="500">无合同 → 默认CPM → 按拉新逻辑处理 → 同二级渠道无拉新任务 → 分母不存在 → 质量分无法计算</text>
+
+  <!-- 底部说明 -->
+  <text x="22" y="1180" fill="#6b7280" font-size="10">注：CPM/CPA结算方式根据合同判断；无合同默认CPM；质量分分母范围（同任务 or 同渠道同任务）由配置决定</text>
+</svg>
+</body>
+</html>

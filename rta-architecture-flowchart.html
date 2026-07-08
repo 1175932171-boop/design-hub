@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>天渠 RTA 三层架构流程图</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh;}
+
+/* 页头 */
+.hd{background:linear-gradient(135deg,#0f172a,#1e3a8a 55%,#312e81);padding:20px 40px 18px;display:flex;align-items:center;gap:16px;}
+.hd svg{width:40px;height:40px;flex-shrink:0;}
+.hd-info h1{color:#fff;font-size:17px;font-weight:800;}
+.hd-info p{color:rgba(255,255,255,.55);font-size:11.5px;margin-top:3px;}
+
+/* 主体 */
+.wrap{padding:28px 32px 44px;max-width:1300px;margin:0 auto;}
+
+/* 流程图横向容器 */
+.flow-container{display:flex;align-items:stretch;gap:0;margin-bottom:32px;}
+
+/* 层级盒子 */
+.layer{flex:1;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);}
+.layer-hd{padding:13px 16px 11px;display:flex;align-items:center;gap:9px;}
+.lh-num{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
+.lh-title{font-size:14px;font-weight:800;color:#fff;}
+.lh-sub{font-size:10.5px;color:rgba(255,255,255,.7);margin-top:1px;}
+.layer-body{padding:14px 16px 18px;background:#fff;height:100%;}
+
+/* 蓝-绿-紫主题 */
+.l-blue .layer-hd{background:linear-gradient(135deg,#1d4ed8,#3b82f6);}
+.l-green .layer-hd{background:linear-gradient(135deg,#059669,#10b981);}
+.l-purple .layer-hd{background:linear-gradient(135deg,#7c3aed,#a855f7);}
+
+/* 层间箭头 */
+.layer-arrow{display:flex;align-items:center;justify-content:center;padding:0 10px;flex-shrink:0;color:#94a3b8;font-size:28px;margin-top:52px;}
+
+/* 流程步骤条 */
+.step{border-radius:6px;padding:9px 11px;margin-bottom:8px;border-left:3px solid;}
+.step:last-child{margin-bottom:0;}
+.step-title{font-size:12px;font-weight:800;color:#1e293b;margin-bottom:3px;}
+.step-desc{font-size:11px;color:#475569;line-height:1.6;}
+
+.sb{border-color:#3b82f6;background:#eff6ff;}
+.sg{border-color:#10b981;background:#f0fdf4;}
+.sp{border-color:#a855f7;background:#faf5ff;}
+
+/* 标签 */
+.tag{display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:600;margin:2px 2px;}
+.tb{background:#dbeafe;color:#1d4ed8;}
+.tg{background:#dcfce7;color:#166534;}
+.tp{background:#ede9fe;color:#6b21a8;}
+.ta{background:#ffedd5;color:#92400e;}
+.ts{background:#f1f5f9;color:#475569;}
+
+/* 分流可视化 */
+.split-viz{display:flex;gap:6px;margin-top:8px;align-items:stretch;}
+.sv-item{flex:1;border-radius:5px;padding:7px 8px;text-align:center;border:1.5px solid;}
+.sv-blank{background:#f8fafc;border-color:#94a3b8;border-style:dashed;}
+.sv-exp{background:#eff6ff;border-color:#93c5fd;}
+.sv-name{font-size:10px;font-weight:700;color:#334155;}
+.sv-pct{font-size:13px;font-weight:800;margin-top:2px;}
+.sv-blank .sv-pct{color:#64748b;}
+.sv-exp .sv-pct{color:#1d4ed8;}
+
+/* 实验组可视化 */
+.exp-viz{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;}
+.ev-item{border-radius:5px;padding:7px 8px;text-align:center;border:1.5px solid;}
+.ev-e1{background:#eff6ff;border-color:#93c5fd;}
+.ev-e2{background:#f0fdf4;border-color:#86efac;}
+.ev-ctrl{background:#fefce8;border-color:#fde047;}
+.ev-blank{background:#f8fafc;border-color:#94a3b8;border-style:dashed;}
+.ev-name{font-size:10px;font-weight:700;color:#334155;}
+.ev-strategy{font-size:10px;color:#1d4ed8;margin-top:1px;}
+.ev-pct{font-size:12px;font-weight:800;margin-top:2px;}
+.ev-e1 .ev-pct{color:#1d4ed8;} .ev-e2 .ev-pct{color:#059669;} .ev-ctrl .ev-pct{color:#b45309;} .ev-blank .ev-pct{color:#64748b;}
+
+/* Tier 出价示意 */
+.tier-list{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.tier-row{display:flex;align-items:center;gap:7px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:4px;padding:5px 8px;}
+.tr-num{background:#7c3aed;color:#fff;font-size:10px;padding:1px 6px;border-radius:3px;flex-shrink:0;min-width:32px;text-align:center;}
+.tr-cond{font-size:11px;color:#374151;flex:1;}
+.tr-price{font-size:11px;font-weight:800;color:#7c3aed;flex-shrink:0;}
+
+/* ADX 出口 */
+.adx-box{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border-radius:7px;padding:11px 14px;text-align:center;margin-top:12px;}
+.adx-title{font-size:12.5px;font-weight:800;}
+.adx-sub{font-size:10.5px;opacity:.65;margin-top:3px;}
+.adx-chips{display:flex;gap:5px;justify-content:center;margin-top:7px;flex-wrap:wrap;}
+.adx-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);padding:2px 9px;border-radius:10px;font-size:10.5px;}
+
+/* 底部请求链路 */
+.req-flow{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-top:4px;}
+.rf-title{font-size:11.5px;font-weight:800;color:#1d4ed8;margin-bottom:10px;}
+.rf-steps{display:flex;align-items:center;flex-wrap:nowrap;overflow-x:auto;gap:0;}
+.rfs{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;}
+.rfs-box{padding:6px 12px;border-radius:5px;font-size:11.5px;font-weight:700;border:1.5px solid;white-space:nowrap;}
+.rfs-sub{font-size:9.5px;color:#94a3b8;}
+.rfa{color:#94a3b8;font-size:15px;padding:0 4px;flex-shrink:0;margin-bottom:14px;}
+.bs{background:#f8fafc;border-color:#e2e8f0;color:#334155;}
+.bb{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
+.bg{background:#f0fdf4;border-color:#bbf7d0;color:#059669;}
+.bp{background:#faf5ff;border-color:#e9d5ff;color:#7c3aed;}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <svg viewBox="0 0 80 80" fill="none">
+    <defs><linearGradient id="G" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient></defs>
+    <path d="M14 65L14 37L40 14L66 37L66 65" stroke="url(#G)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M27 65L27 48L40 35L53 48L53 65" fill="url(#G)" opacity=".75"/>
+  </svg>
+  <div class="hd-info">
+    <h1>天渠 RTA 三层架构流程图</h1>
+    <p>横版布局：流量层（左）→ 实验层（中）→ 策略层（右）</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== 横版三层流程图 ===== -->
+  <div class="flow-container">
+
+    <!-- 流量层 -->
+    <div class="layer l-blue">
+      <div class="layer-hd">
+        <div class="lh-num">1</div>
+        <div>
+          <div class="lh-title">RTA 流量层</div>
+          <div class="lh-sub">Traffic Layer</div>
+        </div>
+      </div>
+      <div class="layer-body">
+
+        <div class="step sb">
+          <div class="step-title">① 媒体请求接入</div>
+          <div class="step-desc">
+            <div class="tag tb">Tanx</div><div class="tag ta">巨量引擎</div><div class="tag tg">腾讯广告</div><div class="tag tp">OPPO</div><div class="tag ts">VIVO</div>
+            <div style="margin-top:4px;">携带 deviceid + RTAID，触发 RTA 回调</div>
+          </div>
+        </div>
+
+        <div class="step sb">
+          <div class="step-title">② ID Mapping</div>
+          <div class="step-desc">
+            deviceid（IDFA/OAID）→ userid<br>
+            userid 作为分流唯一锚点<br>
+            <span style="color:#64748b;font-size:10.5px;">匿名用户走低系数/标准出价并行赛马</span>
+          </div>
+        </div>
+
+        <div class="step sb">
+          <div class="step-title">③ Tair 标签查询</div>
+          <div class="step-desc">
+            <div class="tag tb">pLTV</div><div class="tag tg">preB（B浓度）</div><div class="tag tp">cvr</div><div class="tag ts">BA分层</div>
+            <div style="margin-top:3px;">毫秒级实时查询，替代奥格人群包</div>
+          </div>
+        </div>
+
+        <div class="step sb">
+          <div class="step-title">④ 流量分桶（贯穿层）</div>
+          <div class="step-desc">hash(userid) % 100</div>
+          <div class="split-viz">
+            <div class="sv-item sv-blank">
+              <div class="sv-name">空白组<br>HoldOut</div>
+              <div class="sv-pct">1%</div>
+            </div>
+            <div class="sv-item sv-exp">
+              <div class="sv-name">进入<br>实验层</div>
+              <div class="sv-pct">99%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step sb">
+          <div class="step-title">⑤ RTAID 路由</div>
+          <div class="step-desc">匹配请求 RTAID → 加载对应实验配置（实验组/对照组/空白组 + 出价策略绑定）</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="layer-arrow">→</div>
+
+    <!-- 实验层 -->
+    <div class="layer l-green">
+      <div class="layer-hd">
+        <div class="lh-num">2</div>
+        <div>
+          <div class="lh-title">RTA 实验层</div>
+          <div class="lh-sub">Experiment Layer</div>
+        </div>
+      </div>
+      <div class="layer-body">
+
+        <div class="step sg">
+          <div class="step-title">① 媒体10桶分流</div>
+          <div class="step-desc">
+            hash(userid) % 10 → 均匀分配至10个桶<br>
+            <span style="color:#64748b;font-size:10.5px;">分层哈希保障各桶 pLTV 初始分布一致</span>
+          </div>
+        </div>
+
+        <div class="step sg">
+          <div class="step-title">② 实验组别分配</div>
+          <div class="step-desc">桶号 → 映射到对应实验组别：</div>
+          <div class="exp-viz">
+            <div class="ev-item ev-e1">
+              <div class="ev-name">实验组 1</div>
+              <div class="ev-strategy">实验策略 A</div>
+              <div class="ev-pct">45%</div>
+            </div>
+            <div class="ev-item ev-e2">
+              <div class="ev-name">实验组 2</div>
+              <div class="ev-strategy">实验策略 B</div>
+              <div class="ev-pct">45%</div>
+            </div>
+            <div class="ev-item ev-ctrl">
+              <div class="ev-name">对照组</div>
+              <div class="ev-strategy">历史优版策略</div>
+              <div class="ev-pct">9%</div>
+            </div>
+            <div class="ev-item ev-blank">
+              <div class="ev-name">空白组</div>
+              <div class="ev-strategy">不出价</div>
+              <div class="ev-pct">1%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step sg">
+          <div class="step-title">③ 实验有效性约束</div>
+          <div class="step-desc">
+            <div class="tag tg">≥ 30 个计划</div>
+            <div class="tag tg">日均消耗 ≥ 2 万</div>
+            <div class="tag tg">累计转化 ≥ 100</div>
+            <div class="tag tg">周期 ≥ 14 天</div>
+          </div>
+        </div>
+
+        <div class="step sg">
+          <div class="step-title">④ 双层实验机制</div>
+          <div class="step-desc">
+            <strong>内层</strong>：Tier 分层梯度校验（桶内出价最优化）<br>
+            <strong>外层</strong>：实验组 vs 对照组版本赛马<br>
+            两层独立运行，互不占用桶位
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="layer-arrow">→</div>
+
+    <!-- 策略层 -->
+    <div class="layer l-purple">
+      <div class="layer-hd">
+        <div class="lh-num">3</div>
+        <div>
+          <div class="lh-title">RTA 策略层</div>
+          <div class="lh-sub">Strategy Layer</div>
+        </div>
+      </div>
+      <div class="layer-body">
+
+        <div class="step sp">
+          <div class="step-title">① 出价策略标签匹配</div>
+          <div class="step-desc">
+            命中桶号 → 加载对应实验组策略<br>
+            条件维度：<div class="tag tp">pLTV（序准）</div><div class="tag tp">preB（浓度）</div><div class="tag tp">cvr（值准）</div>
+          </div>
+        </div>
+
+        <div class="step sp">
+          <div class="step-title">② Tier 分层出价（最多10桶）</div>
+          <div class="step-desc">自上而下遍历，命中首个满足条件的 Tier：</div>
+          <div class="tier-list">
+            <div class="tier-row">
+              <span class="tr-num">Tier 1</span>
+              <span class="tr-cond">pLTV&gt;8 且 preB&gt;0.2</span>
+              <span class="tr-price">65,000</span>
+            </div>
+            <div class="tier-row">
+              <span class="tr-num">Tier 2</span>
+              <span class="tr-cond">pLTV&gt;5 且 preB&gt;0.17</span>
+              <span class="tr-price">48,000</span>
+            </div>
+            <div class="tier-row">
+              <span class="tr-num">Tier 3</span>
+              <span class="tr-cond">pLTV&gt;3 且 preB&gt;0.15</span>
+              <span class="tr-price">43,000</span>
+            </div>
+            <div class="tier-row" style="background:#f8fafc;border-color:#e2e8f0;">
+              <span class="tr-num" style="background:#94a3b8;">…</span>
+              <span class="tr-cond" style="color:#94a3b8;">Tier 4–10 递降条件</span>
+              <span class="tr-price" style="color:#94a3b8;">…</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="step sp">
+          <div class="step-title">③ 出价模式</div>
+          <div class="step-desc">
+            <div class="tag tp">系数出价（×1.8）</div>
+            <div class="tag tp">CPA 出价（¥65,000）</div>
+            <div class="tag tp">混合出价</div>
+          </div>
+        </div>
+
+        <div class="adx-box">
+          <div class="adx-title">↑ 返回出价结果 → ADX</div>
+          <div class="adx-sub">出价系数 / CPA竞价目标值</div>
+          <div class="adx-chips">
+            <span class="adx-chip">实时竞价</span>
+            <span class="adx-chip">&lt;50ms</span>
+            <span class="adx-chip">全量日志</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== 完整请求链路 ===== -->
+  <div class="req-flow">
+    <div class="rf-title">▶ 完整在线出价请求链路</div>
+    <div class="rf-steps">
+      <div class="rfs"><div class="rfs-box bs">媒体广告请求</div><div class="rfs-sub">deviceid + RTAID</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bb">ID Mapping</div><div class="rfs-sub">deviceid→userid</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bb">Tair 标签查询</div><div class="rfs-sub">pLTV/preB/cvr</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bb">RTAID 路由</div><div class="rfs-sub">匹配实验配置</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bb">流量分桶</div><div class="rfs-sub">1% 空白 / 99% 实验</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bg">实验分流</div><div class="rfs-sub">hash % 10</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bg">实验组分配</div><div class="rfs-sub">实验组/对照组</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bp">条件标签匹配</div><div class="rfs-sub">pLTV+preB 分层</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bp">出价计算</div><div class="rfs-sub">系数/CPA/混合</div></div>
+      <div class="rfa">→</div>
+      <div class="rfs"><div class="rfs-box bs">返回 ADX</div><div class="rfs-sub">实时竞价决策</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

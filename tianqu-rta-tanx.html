@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天渠 RTA 接 Tanx 技术对接文档</title>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-light: #e8f0fe;
+    --success: #0a8a4f;
+    --success-light: #e6f5ee;
+    --warning: #c97a00;
+    --warning-light: #fff8e1;
+    --danger: #c0392b;
+    --danger-light: #fdf2f0;
+    --gray: #64748b;
+    --gray-light: #f8fafc;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-secondary: #475569;
+    --radius: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f1f5f9;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .page-header {
+    background: linear-gradient(135deg, #1a3a6b 0%, #1a56db 100%);
+    color: #fff;
+    padding: 40px 48px 32px;
+  }
+  .page-header h1 { font-size: 26px; font-weight: 700; letter-spacing: 0.5px; }
+  .page-header .subtitle { margin-top: 8px; font-size: 14px; color: rgba(255,255,255,0.75); }
+  .page-header .meta { margin-top: 16px; display: flex; gap: 20px; }
+  .meta-tag {
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.9);
+  }
+  .toc {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .toc a {
+    display: block;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--gray);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .toc a:hover { color: var(--primary); border-bottom-color: var(--primary); }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 48px; }
+  .section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .section-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--gray-light);
+  }
+  .section-header .num {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 15px; font-weight: 600; color: var(--text); }
+  .section-header .badge {
+    margin-left: auto;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .section-body { padding: 24px; }
+  /* 架构卡片 */
+  .arch-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+  .arch-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    text-align: center;
+    background: var(--gray-light);
+  }
+  .arch-card.highlight { background: var(--primary-light); border-color: #93b4f5; }
+  .arch-card .icon { font-size: 22px; margin-bottom: 6px; }
+  .arch-card .label { font-size: 12px; font-weight: 600; color: var(--text); }
+  .arch-card .sub { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+  /* 流程箭头 */
+  .flow-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .flow-node {
+    background: var(--primary-light);
+    border: 1px solid #93b4f5;
+    border-radius: var(--radius);
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .flow-node.green { background: var(--success-light); border-color: #6dd5a5; color: var(--success); }
+  .flow-node.orange { background: var(--warning-light); border-color: #f9c74f; color: var(--warning); }
+  .flow-node.gray { background: #f1f5f9; border-color: #cbd5e1; color: var(--gray); }
+  .arrow { color: var(--gray); font-size: 16px; flex-shrink: 0; }
+  /* 媒体标签 */
+  .media-tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .media-tag {
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .media-tag.gdt { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+  .media-tag.tt { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
+  .media-tag.pangle { background: #fce4ec; color: #ad1457; border-color: #f48fb1; }
+  .media-tag.baidu { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+  .media-tag.ks { background: #f3e5f5; color: #6a1b9a; border-color: #ce93d8; }
+  /* 步骤列表 */
+  .step-list { list-style: none; }
+  .step-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-item:last-child { border-bottom: none; }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step-content h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .step-content p { font-size: 13px; color: var(--text-secondary); }
+  .step-content .phase-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .phase-1 { background: #e8f0fe; color: #1a56db; }
+  .phase-2 { background: #e6f5ee; color: #0a8a4f; }
+  .phase-3 { background: #fff8e1; color: #c97a00; }
+  /* 代码块 */
+  .code-block {
+    background: #1e293b;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin: 12px 0;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: #e2e8f0;
+    overflow-x: auto;
+  }
+  .code-block .c { color: #64748b; }
+  .code-block .k { color: #93c5fd; }
+  .code-block .s { color: #86efac; }
+  .code-block .n { color: #fcd34d; }
+  .code-block .v { color: #f9a8d4; }
+  /* 逻辑树 */
+  .logic-tree {
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 12.5px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    line-height: 2;
+    color: var(--text);
+    margin: 12px 0;
+  }
+  .logic-tree .warn { color: #c97a00; font-weight: 600; }
+  .logic-tree .key { color: var(--primary); font-weight: 600; }
+  .logic-tree .val { color: var(--success); }
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--gray-light); padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-light); }
+  td code { background: var(--primary-light); color: var(--primary); padding: 1px 6px; border-radius: 3px; font-size: 11.5px; font-family: monospace; }
+  /* 告警框 */
+  .alert {
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin: 12px 0;
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    border: 1px solid transparent;
+  }
+  .alert.warn { background: var(--warning-light); border-color: #f9c74f; color: #92400e; }
+  .alert.info { background: var(--primary-light); border-color: #93b4f5; color: #1e3a8a; }
+  .alert.success { background: var(--success-light); border-color: #6dd5a5; color: #14532d; }
+  .alert .icon { font-size: 16px; flex-shrink: 0; }
+  /* 双栏布局 */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .sub-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    background: var(--gray-light);
+  }
+  .sub-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .sub-card ul { list-style: none; }
+  .sub-card ul li { font-size: 12.5px; color: var(--text-secondary); padding: 3px 0; display: flex; gap: 6px; }
+  .sub-card ul li::before { content: "•"; color: var(--primary); font-weight: 700; }
+  /* 指标卡片 */
+  .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+  .metric-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+  }
+  .metric-card .title { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .metric-card .value { font-size: 20px; font-weight: 700; color: var(--primary); }
+  .metric-card .unit { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  /* 数据流时序 */
+  .sequence {
+    position: relative;
+    padding-left: 32px;
+    border-left: 2px solid var(--border);
+    margin: 16px 0;
+  }
+  .seq-item {
+    position: relative;
+    padding: 0 0 20px 16px;
+  }
+  .seq-item::before {
+    content: '';
+    position: absolute;
+    left: -7px; top: 6px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  .seq-item.sub::before { background: var(--gray); box-shadow: 0 0 0 2px var(--gray); }
+  .seq-item h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .seq-item p { font-size: 12.5px; color: var(--text-secondary); }
+  /* checklist */
+  .checklist { list-style: none; }
+  .checklist li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 7px 0; border-bottom: 1px dashed var(--border);
+    font-size: 13px;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li .check {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 3px;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  /* 原则卡片 */
+  .principle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .principle-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    border-top: 3px solid var(--primary);
+  }
+  .principle-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .principle-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  @media (max-width: 768px) {
+    .container { padding: 16px; }
+    .arch-grid { grid-template-columns: repeat(2,1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .metric-grid { grid-template-columns: repeat(2,1fr); }
+    .principle-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>天渠 RTA 接 Tanx 技术对接文档</h1>
+  <div class="subtitle">覆盖架构设计、对接流程、实时竞价数据流与关键工程规范</div>
+  <div class="meta">
+    <span class="meta-tag">版本 v1.0</span>
+    <span class="meta-tag">天渠 RTA 团队</span>
+    <span class="meta-tag">涵盖媒体：腾讯 / 头条 / 穿山甲 / 百度 / 快手</span>
+  </div>
+</div>
+
+<nav class="toc">
+  <a href="#arch">一、整体架构</a>
+  <a href="#process">二、对接流程</a>
+  <a href="#dataflow">三、实时竞价数据流</a>
+  <a href="#pltv">四、pLTV 三元组规范</a>
+  <a href="#toutiao">五、头条双轨设计</a>
+  <a href="#log">六、日志与报告链路</a>
+  <a href="#checklist">七、上线 Checklist</a>
+  <a href="#principles">八、关键设计原则</a>
+</nav>
+
+<div class="container">
+
+  <!-- ① 整体架构 -->
+  <div class="section" id="arch">
+    <div class="section-header">
+      <div class="num">1</div>
+      <h2>整体架构：Tanx 统一封装层</h2>
+      <span class="badge">架构设计</span>
+    </div>
+    <div class="section-body">
+      <p style="color:var(--text-secondary);margin-bottom:16px;">Tanx 作为统一 RTA 封装层，屏蔽各上游媒体的接口差异。天渠只需对接 Tanx 一套协议，即可覆盖全部媒体流量，并享有统一曝光监测与转化回传能力。</p>
+
+      <div class="arch-grid">
+        <div class="arch-card">
+          <div class="icon">📢</div>
+          <div class="label">腾讯广告</div>
+          <div class="sub">广点通 (GDT)</div>
+        </div>
+        <div class="arch-card">
+          <div class="icon">🔥</div>
+          <div class="label">头条广告</div>
+          <div class="sub">站内 + 穿山甲</div>
+        </div>
+        <div class="arch-card">
+          <div class="icon">🔍</div>
+          <div class="label">百度推广</div>
+          <div class="sub">百度信息流</div>
+        </div>
+        <div class="arch-card">
+          <div class="icon">▶️</div>
+          <div class="label">快手广告</div>
+          <div class="sub">快手信息流</div>
+        </div>
+        <div class="arch-card highlight">
+          <div class="icon">🔗</div>
+          <div class="label">Tanx 封装层</div>
+          <div class="sub">统一协议下发</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="sub-card">
+          <h4>🎯 Tanx 统一能力</h4>
+          <ul>
+            <li>统一 RTA 请求协议（天渠无需适配各媒体）</li>
+            <li>统一曝光监测（各媒体曝光 URL 托管）</li>
+            <li>统一转化回传事件（激活 / 注册 / 付费）</li>
+            <li>屏蔽媒体接口差异，降低接入成本</li>
+          </ul>
+        </div>
+        <div class="sub-card">
+          <h4>📦 下发字段（Tanx → 天渠）</h4>
+          <ul>
+            <li><code>device_id</code>：设备 ID（OAID / IDFA / IMEI）</li>
+            <li><code>rtaid</code>：分桶标识（腾讯/头条站内直接对应分桶）</li>
+            <li><code>platform</code>：投放平台标识</li>
+            <li><code>site_id</code>：版位 ID（用于 pLTV 三元组查询）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="alert info" style="margin-top:8px;">
+        <span class="icon">ℹ️</span>
+        <span><strong>分桶映射规则：</strong>腾讯广告和头条站内 RTA，每个 <code>rtaid</code> 直接对应一个分桶 ID，天渠无需二次取模；其他媒体按 <code>uid</code> 或 <code>device_id</code> Hash 取模分桶。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 对接流程 -->
+  <div class="section" id="process">
+    <div class="section-header">
+      <div class="num">2</div>
+      <h2>对接流程：三阶段七步骤</h2>
+      <span class="badge">协作流程</span>
+    </div>
+    <div class="section-body">
+
+      <div class="flow-row" style="margin-bottom:20px;">
+        <div class="flow-node">阶段一：技术联调</div>
+        <div class="arrow">→</div>
+        <div class="flow-node green">阶段二：媒体配置</div>
+        <div class="arrow">→</div>
+        <div class="flow-node orange">阶段三：放量验证</div>
+      </div>
+
+      <ul class="step-list">
+        <li class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <span class="phase-badge phase-1">阶段一 · 技术联调</span>
+            <h4>天渠开发 Tanx RTA 接口</h4>
+            <p>实现符合 Tanx repeat 协议的 RTA 服务：接收 device_id + rtaid → ID Mapping → pLTV 查询 → 策略匹配 → 返回 is_bid + price_factor。响应超时要求 P99 ≤ 50ms，需支持 HTTPS POST + token 鉴权。</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <span class="phase-badge phase-1">阶段一 · 技术联调</span>
+            <h4>Tanx 支持天渠联调（数据 Mock）</h4>
+            <p>Tanx 提供各媒体类型 Mock 请求（腾讯/头条站内/穿山甲/百度/快手），覆盖 OAID / IDFA / IMEI 三类设备 ID，验证超时、无效 ID、rtaid 不存在等异常场景。联调通过标准：各路请求正常解析，P99 响应 ≤ 50ms，repeat 协议 100% 合规。</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <span class="phase-badge phase-2">阶段二 · 媒体配置</span>
+            <h4>Tanx 沟通确认媒体开户，分配策略 ID / 账户 ID</h4>
+            <p>各媒体分配对应 rtaid（腾讯/头条站内每个 rtaid = 一个分桶）；头条需单独分配站内 RTA 和穿山甲 RTA 两套独立 rtaid 集合；获取各媒体账户 ID / 策略 ID 清单并存档。</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <span class="phase-badge phase-2">阶段二 · 媒体配置</span>
+            <h4>天渠侧配置策略 ID / 账户绑定的人群包信息</h4>
+            <p>在天渠配置中心完成：rtaid → 媒体类型 → 分桶 → 实验组 → 策略（pLTV Tier 出价系数表）的完整绑定；头条站内 & 穿山甲独立人群包，实验互斥配置，禁止共用。</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <span class="phase-badge phase-2">阶段二 · 媒体配置</span>
+            <h4>天渠在媒体账户配置 Tanx RTA 接口 & 投放计划</h4>
+            <p>在各媒体广告后台填入 Tanx 提供的 RTA 接口地址（天渠服务端点），绑定 rtaid 至对应广告计划 / 广告组；头条两套 rtaid 分别绑定各自独立计划，确保数据不串流。</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <span class="phase-badge phase-3">阶段三 · 放量验证</span>
+            <h4>天渠在媒体账户充值放量，测试链路</h4>
+            <p>灰度策略：1%~5% 小流量验证链路连通 → 10%~20% 核查分桶均匀性 & ID Mapping 覆盖率 → 50%+ 正式放量，同步上线监控面板和超时告警（超时率 > 5% 自动降级）。</p>
+          </div>
+        </li>
+        <li class="step-item">
+          <div class="step-num">7</div>
+          <div class="step-content">
+            <span class="phase-badge phase-3">阶段三 · 放量验证</span>
+            <h4>投放效果验证（业务评估指标）</h4>
+            <p>依托 Tanx 统一转化回传，评估四项核心指标：<strong>展</strong>（曝光/CPM）· <strong>点</strong>（CTR/CPC）· <strong>消</strong>（消耗/ROI）· <strong>转化</strong>（激活率/付费率/CPA）；通过 rtaid + exp_id 归因至实验组，完成策略赛马显著性检验（p &lt; 0.05）。</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ③ 实时竞价数据流 -->
+  <div class="section" id="dataflow">
+    <div class="section-header">
+      <div class="num">3</div>
+      <h2>实时竞价数据流</h2>
+      <span class="badge">核心链路</span>
+    </div>
+    <div class="section-body">
+      <div class="sequence">
+        <div class="seq-item">
+          <h4>① 广点通发送 RTA 请求 → Tanx</h4>
+          <p>上游媒体（腾讯/头条/百度/快手）在竞价时向 Tanx 发起 RTA 请求</p>
+        </div>
+        <div class="seq-item">
+          <h4>② Tanx 封装转发 → 天渠 RTA 服务</h4>
+          <p>Tanx 将媒体请求统一封装，携带 <code>device_id</code>、<code>platform</code>、<code>site_id</code>、<code>rtaid</code> 等字段，通过 HTTPS POST 下发至天渠</p>
+        </div>
+        <div class="seq-item">
+          <h4>③ 天渠 RTA 服务执行内部处理逻辑（详见下方）</h4>
+          <p>步骤 a ~ j 共十个处理环节，完成从设备 ID 到出价系数的全流程</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>a. ID Mapping</h4>
+          <p>device_id（OAID/IDFA/IMEI）→ ID Mapping 服务 → 内部 uid；未命中则进入 deviceid 分支</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>b. 解析请求上下文</h4>
+          <p>提取 <code>platform</code>（投放平台）和 <code>site_id</code>（版位），作为 pLTV 三元组查询的关键维度</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>c. 查询用户标签（pLTV 三元组 + 其他标签）</h4>
+          <p>详见第四节 pLTV 三元组规范；其他标签：活跃度、购买力、新客标签、B会员标签（全局维度）</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>d. 匹配 RTAID</h4>
+          <p>根据 platform 字段确定 RTAID：gdt→GDT、toutiao_inapp→TT站内、pangle→穿山甲（独立体系）</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>e. Zeus 实验分流 → 确定分桶</h4>
+          <p>uid（或 device_id）经 Zeus 分流 Hash 取模，确定用户所在分桶号（腾讯/头条站内：rtaid 直接对应分桶）</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>f. 读取策略配置（Redis 缓存）</h4>
+          <p>Key: <code>strategy:{rtaid}:{bucket_id}</code>，读取 bid_mode（人工/算法）、premium_rules、fallback_factor</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>g. 匹配溢价条件（标签 AND 组合）</h4>
+          <p>逐条遍历 premium_rules，首条命中即停止；pltv_rank 的语义严格绑定当前 platform × site_id（如 pltv_rank > 0.01 在优量汇 site_id=15 = TOP 1%）</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>h. 计算出价（人工 / 算法双轨）</h4>
+          <p>人工出价：直接返回配置系数；算法出价：传入特征（含 platform + site_id + 分媒体 pLTV）调用算法服务；超时走 fallback_factor 兜底</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>i. 返回结果给 Tanx（repeat 协议）</h4>
+          <p><code>{ bid_id, is_bid, price_factor, rtaid, exp_id, tier, media }</code>，全程 P99 ≤ 50ms</p>
+        </div>
+        <div class="seq-item sub">
+          <h4>j. 异步写日志到 Kafka</h4>
+          <p>含 request_id、uid、rtaid、bucket_id、strategy_id、platform、site_id、出价结果、命中规则、pLTV 值及来源标识（site_level / global_fallback / zero）</p>
+        </div>
+        <div class="seq-item">
+          <h4>④ Tanx 接收出价 → 参与上游媒体竞价</h4>
+          <p>is_bid=true 按 price_factor 出价；is_bid=false 不参与竞价</p>
+        </div>
+        <div class="seq-item">
+          <h4>⑤ 日志数据流：Kafka → Flink → ODPS → 实验报告</h4>
+          <p>Flink 实时聚合按 rtaid × bucket_id 的参竞率、关联 Tanx 统一回传的曝光/点击/转化，写入 ODPS 生成实验报告</p>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="c">// Tanx 下发请求示例</span>
+{
+  <span class="k">"bid_id"</span>: <span class="s">"uuid-xxx"</span>,
+  <span class="k">"rtaid"</span>: <span class="s">"tanx_rta_gdt_001"</span>,         <span class="c">// 腾讯: rtaid = 分桶ID</span>
+  <span class="k">"device"</span>: {
+    <span class="k">"device_id"</span>: <span class="s">"oaid_or_idfa"</span>,
+    <span class="k">"id_type"</span>: <span class="s">"OAID"</span>
+  },
+  <span class="k">"ad_slot"</span>: {
+    <span class="k">"platform"</span>: <span class="s">"gdt"</span>,                   <span class="c">// 投放平台</span>
+    <span class="k">"site_id"</span>: <span class="s">"15"</span>                    <span class="c">// 版位ID（优量汇=15）</span>
+  }
+}
+
+<span class="c">// 天渠 repeat 响应示例</span>
+{
+  <span class="k">"bid_id"</span>: <span class="s">"uuid-xxx"</span>,
+  <span class="k">"is_bid"</span>: <span class="n">true</span>,
+  <span class="k">"price_factor"</span>: <span class="v">1.3</span>,
+  <span class="k">"ext"</span>: {
+    <span class="k">"rtaid"</span>: <span class="s">"tanx_rta_gdt_001"</span>,
+    <span class="k">"exp_id"</span>: <span class="s">"exp_gdt_001"</span>,
+    <span class="k">"bucket_id"</span>: <span class="v">3</span>,
+    <span class="k">"tier"</span>: <span class="v">2</span>                        <span class="c">// 命中 pLTV Tier 2</span>
+  }
+}</div>
+    </div>
+  </div>
+
+  <!-- ④ pLTV 三元组 -->
+  <div class="section" id="pltv">
+    <div class="section-header">
+      <div class="num">4</div>
+      <h2>pLTV 三元组查询规范</h2>
+      <span class="badge">核心规范</span>
+    </div>
+    <div class="section-body">
+      <div class="alert warn">
+        <span class="icon">⚠️</span>
+        <span><strong>关键约束：</strong>pLTV 类标签必须传入 uid + platform + site_id 三元组精准查询，禁止跨媒体点位复用 pltv_rank 值。</span>
+      </div>
+
+      <div class="logic-tree">
+<span class="c">// pLTV 查询 KEY 格式</span>
+<span class="key">KEY:</span> <span class="val">pltv:{version}:{uid}:{platform}:{site_id}</span>
+<span class="c">// 示例：pltv:v3:user_001:gdt:15</span>
+<br>
+<span class="c">// 三级降级策略</span>
+Level 1 → 分点位数据  pltv:{version}:{uid}:{platform}:{site_id}   ✅ 优先读取
+Level 2 → 全局 pLTV   pltv:{version}:{uid}:global                ⚠️ 无分点位时降级
+Level 3 → pLTV = 0                                                ❌ 全局也无时兜底
+<br>
+<span class="c">// pltv_rank 语义示例</span>
+pltv_rank > 0.01  <span class="key">in 优量汇(site_id=15)</span> → 该用户在优量汇点位 pLTV <span class="val">TOP 1%</span>
+pltv_rank > 0.01  <span class="key">in 穿山甲(site_id=xx)</span> → 该用户在穿山甲点位 pLTV <span class="val">TOP 1%</span></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>字段</th>
+            <th>含义</th>
+            <th>降级说明</th>
+            <th>日志来源标识</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>pLTV_V3</code></td>
+            <td>V3 模型分点位 pLTV 绝对值</td>
+            <td>无则读全局，全局无则为 0</td>
+            <td><code>site_level</code></td>
+          </tr>
+          <tr>
+            <td><code>pLTV_V4</code></td>
+            <td>V4 模型分点位 pLTV 绝对值</td>
+            <td>无则读全局，全局无则为 0</td>
+            <td><code>site_level</code></td>
+          </tr>
+          <tr>
+            <td><code>pltv_rank</code></td>
+            <td>该媒体×点位下的百分位排序</td>
+            <td>全局降级时使用全局排序值</td>
+            <td><code>global_fallback</code></td>
+          </tr>
+          <tr>
+            <td>其他标签</td>
+            <td>活跃度/购买力/新客/B会员</td>
+            <td>全局维度，无需区分点位</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ⑤ 头条双轨 -->
+  <div class="section" id="toutiao">
+    <div class="section-header">
+      <div class="num">5</div>
+      <h2>头条双轨设计：站内 RTA vs 穿山甲 RTA</h2>
+      <span class="badge">特殊处理</span>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div class="sub-card" style="border-top:3px solid #e65100;">
+          <h4>🔶 头条站内 RTA（toutiao_inapp）</h4>
+          <ul>
+            <li>独立 rtaid 集合，每个 rtaid 直接对应一个分桶</li>
+            <li>独立实验组 / 对照组配置</li>
+            <li>独立人群包，不与穿山甲共用</li>
+            <li>独立广告计划，不与穿山甲混投</li>
+            <li>日志中 platform = "toutiao_inapp"</li>
+          </ul>
+        </div>
+        <div class="sub-card" style="border-top:3px solid #ad1457;">
+          <h4>🔷 穿山甲 RTA（pangle）</h4>
+          <ul>
+            <li>独立 rtaid 集合，独立于站内体系</li>
+            <li>独立实验组 / 对照组配置</li>
+            <li>独立人群包，不与站内共用</li>
+            <li>独立广告计划，不与站内混投</li>
+            <li>日志中 platform = "pangle"</li>
+          </ul>
+        </div>
+      </div>
+      <div class="alert warn" style="margin-top:12px;">
+        <span class="icon">⚠️</span>
+        <span><strong>严格隔离要求：</strong>头条站内与穿山甲的 rtaid、分桶、策略、人群包、广告计划、实验报告<strong>全部独立维护</strong>，禁止任何维度混用，否则将导致实验归因错误。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 日志与报告链路 -->
+  <div class="section" id="log">
+    <div class="section-header">
+      <div class="num">6</div>
+      <h2>日志与实验报告链路</h2>
+      <span class="badge">数据工程</span>
+    </div>
+    <div class="section-body">
+      <div class="flow-row" style="margin-bottom:20px;">
+        <div class="flow-node">RTA 服务</div>
+        <div class="arrow">→ 异步</div>
+        <div class="flow-node">Kafka<br><small>rta_bid_log</small></div>
+        <div class="arrow">→ 实时</div>
+        <div class="flow-node green">Flink<br><small>实时计算</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-node green">ODPS<br><small>离线数仓</small></div>
+        <div class="arrow">→</div>
+        <div class="flow-node orange">实验报告<br><small>天渠平台</small></div>
+      </div>
+
+      <div class="two-col">
+        <div class="sub-card">
+          <h4>📋 Kafka 日志关键字段</h4>
+          <ul>
+            <li><code>request_id</code> 请求唯一标识</li>
+            <li><code>uid</code> / <code>device_id</code> 用户标识</li>
+            <li><code>rtaid</code> / <code>bucket_id</code> 分桶归因</li>
+            <li><code>platform</code> / <code>site_id</code> 媒体点位</li>
+            <li><code>is_bid</code> / <code>price_factor</code> 出价结果</li>
+            <li><code>matched_rule</code> 命中溢价条件</li>
+            <li><code>pltv_v3</code> / <code>pltv_v4</code> / <code>pltv_rank</code> 使用值</li>
+            <li><code>pltv_source</code> site_level / global_fallback / zero</li>
+            <li><code>bid_mode</code> human / algo</li>
+          </ul>
+        </div>
+        <div class="sub-card">
+          <h4>📊 实验报告覆盖维度</h4>
+          <ul>
+            <li>按 rtaid × bucket_id 聚合参竞量/参竞率</li>
+            <li>关联 Tanx 统一回传：曝光/点击/转化</li>
+            <li>实验组 vs 对照组：展/点/消/转化对比</li>
+            <li>pLTV 分层（Tier 1~10）效果归因</li>
+            <li>显著性检验（p &lt; 0.05 为有效结论）</li>
+            <li>策略赛马决策：推全 / 下线</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ Checklist -->
+  <div class="section" id="checklist">
+    <div class="section-header">
+      <div class="num">7</div>
+      <h2>上线 Checklist</h2>
+      <span class="badge">验收标准</span>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div>
+          <p style="font-weight:600;margin-bottom:10px;font-size:13px;">技术联调阶段</p>
+          <ul class="checklist">
+            <li><span class="check"></span>各媒体类型请求均可正常解析（腾讯/头条站内/穿山甲/百度/快手）</li>
+            <li><span class="check"></span>ID Mapping 命中与未命中两路逻辑验证通过</li>
+            <li><span class="check"></span>RTA 响应超时 P99 ≤ 50ms</li>
+            <li><span class="check"></span>repeat 协议格式 100% 合规</li>
+            <li><span class="check"></span>异常场景覆盖（超时/无效ID/rtaid不存在）</li>
+            <li><span class="check"></span>pLTV 三级降级逻辑验证通过</li>
+          </ul>
+        </div>
+        <div>
+          <p style="font-weight:600;margin-bottom:10px;font-size:13px;">媒体配置 & 放量阶段</p>
+          <ul class="checklist">
+            <li><span class="check"></span>各媒体 rtaid 已录入配置中心，分桶映射正确</li>
+            <li><span class="check"></span>头条站内 & 穿山甲 rtaid 独立建档，实验互斥</li>
+            <li><span class="check"></span>媒体账户 RTA 接口地址配置正确</li>
+            <li><span class="check"></span>1% HoldOut 空白组已隔离</li>
+            <li><span class="check"></span>分桶均匀性验证（χ² 检验 p > 0.05）</li>
+            <li><span class="check"></span>ID Mapping 覆盖率 ≥ 目标值（建议 ≥ 60%）</li>
+            <li><span class="check"></span>Tanx 统一转化回传接口联调通过</li>
+            <li><span class="check"></span>超时告警规则上线（超时率 > 5% 自动降级）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <p style="font-weight:600;margin-bottom:10px;font-size:13px;">监控指标看板</p>
+        <table>
+          <thead>
+            <tr><th>指标</th><th>预警阈值</th><th>说明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>RTA 响应超时率</td><td>> 5%</td><td>触发自动降级，切换兜底出价</td></tr>
+            <tr><td>is_bid 参竞率</td><td>低于预期</td><td>检查 ID Mapping & 策略配置</td></tr>
+            <tr><td>ID Mapping 覆盖率</td><td>< 50%</td><td>排查设备 ID 格式 / 映射表问题</td></tr>
+            <tr><td>分桶流量偏差</td><td>p &lt; 0.05</td><td>重新核查 Zeus Hash 分流逻辑</td></tr>
+            <tr><td>pLTV 全局降级率</td><td>持续升高</td><td>排查分点位数据覆盖率问题</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧ 关键设计原则 -->
+  <div class="section" id="principles">
+    <div class="section-header">
+      <div class="num">8</div>
+      <h2>关键设计原则</h2>
+      <span class="badge">工程规范</span>
+    </div>
+    <div class="section-body">
+      <div class="principle-grid">
+        <div class="principle-card">
+          <h4>🎯 pLTV 三元组精准性</h4>
+          <p>pLTV 查询必须传入 uid + platform + site_id 三元组，精准到媒体×点位维度，避免跨点位数据污染影响溢价决策准确性。</p>
+        </div>
+        <div class="principle-card">
+          <h4>📊 pltv_rank 语义绑定</h4>
+          <p>pltv_rank 的百分位排序语义严格对应当前请求的 platform × site_id，不得跨媒体或跨点位复用同一 rank 值做策略判断。</p>
+        </div>
+        <div class="principle-card">
+          <h4>🔒 头条双轨全隔离</h4>
+          <p>头条站内 RTA 与穿山甲 RTA 在 rtaid、分桶、策略、人群包、广告计划、实验报告六个维度全部独立，禁止任何混用。</p>
+        </div>
+        <div class="principle-card">
+          <h4>🛡️ 算法出价超时兜底</h4>
+          <p>算法服务超时不允许无出价返回，必须在规定时间内切换至 fallback_factor 兜底系数，确保参竞率稳定。</p>
+        </div>
+        <div class="principle-card">
+          <h4>📝 pLTV 来源必须日志</h4>
+          <p>每次出价日志必须记录 pLTV 数据来源（site_level / global_fallback / zero），用于数据质量监控和排查分点位覆盖率问题。</p>
+        </div>
+        <div class="principle-card">
+          <h4>🔗 Tanx 统一回传依赖</h4>
+          <p>曝光/点击/转化事件统一依赖 Tanx 回传，不单独对接各媒体事件接口，通过 exp_id + rtaid 精准归因至实验组。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:24px;color:var(--gray);font-size:12px;border-top:1px solid var(--border);background:#fff;margin-top:8px;">
+  天渠 RTA 技术对接文档 · 涵盖腾讯 / 头条(站内+穿山甲) / 百度 / 快手
+</div>
+
+</body>
+</html>

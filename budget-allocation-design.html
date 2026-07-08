@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信息流广告预算智能分配系统 — 设计方案</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.7; }
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 210px; background: #1e293b; color: #cbd5e1; padding: 24px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+.sidebar h2 { color: #f8fafc; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #334155; }
+.sidebar .group-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 6px 4px; display: block; }
+.sidebar a { display: block; color: #94a3b8; text-decoration: none; font-size: 12.5px; padding: 5px 8px; border-radius: 4px; margin-bottom: 1px; }
+.sidebar a:hover { background: #334155; color: #f1f5f9; }
+.main { flex: 1; padding: 40px 52px 60px; max-width: 920px; }
+h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+.subtitle { color: #64748b; font-size: 13px; margin-bottom: 32px; padding-bottom: 22px; border-bottom: 2px solid #e2e8f0; }
+h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 38px 0 14px; padding-left: 12px; border-left: 4px solid #3b82f6; }
+h3 { font-size: 14px; font-weight: 600; color: #334155; margin: 22px 0 9px; }
+p { margin-bottom: 12px; font-size: 13.5px; line-height: 1.85; }
+ul { margin: 0 0 12px 18px; font-size: 13.5px; line-height: 1.85; }
+li { margin-bottom: 4px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+th { background: #f1f5f9; padding: 9px 13px; text-align: left; font-weight: 600; color: #374151; border: 1px solid #e2e8f0; }
+td { padding: 8px 13px; border: 1px solid #e2e8f0; color: #374151; vertical-align: top; }
+tr:nth-child(even) td { background: #f8fafc; }
+.formula-box { background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #6366f1; padding: 14px 18px; margin: 12px 0; border-radius: 6px; }
+.formula-box .ftitle { font-size: 10.5px; color: #6366f1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.formula-box .fexpr { font-family: "Courier New", monospace; font-size: 13.5px; line-height: 2; color: #1e293b; }
+.formula-box .fnote { font-size: 12px; color: #64748b; margin-top: 8px; line-height: 1.8; }
+.callout { padding: 13px 16px; border-radius: 7px; margin: 14px 0; font-size: 13px; line-height: 1.75; }
+.cb-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.cb-yellow { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.cb-green { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.cb-red { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.cb-purple { background: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6; }
+code { background: #f1f5f9; color: #dc2626; padding: 2px 5px; border-radius: 3px; font-family: "Courier New", monospace; font-size: 12.5px; }
+pre { background: #1e293b; color: #e2e8f0; padding: 16px 18px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.75; margin: 12px 0; }
+pre .c { color: #64748b; } pre .k { color: #93c5fd; } pre .s { color: #86efac; } pre .n { color: #fca5a5; }
+.arch-box { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin: 14px 0; background: white; }
+.arch-row { display: flex; align-items: stretch; border-bottom: 1px solid #e2e8f0; }
+.arch-row:last-child { border-bottom: none; }
+.arch-tag { width: 80px; background: #1e293b; color: #e2e8f0; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px 8px; flex-shrink: 0; line-height: 1.5; }
+.arch-desc { flex: 1; padding: 13px 16px; font-size: 13px; color: #374151; line-height: 1.8; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+.kpi-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; }
+.kpi-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.kpi-val { font-size: 20px; font-weight: 800; color: #0f172a; }
+.kpi-desc { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+.tag { display: inline-block; background: #e0e7ff; color: #3730a3; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; margin-right: 4px; }
+.tag-g { background: #dcfce7; color: #166534; }
+.tag-y { background: #fef9c3; color: #92400e; }
+.tag-r { background: #fee2e2; color: #991b1b; }
+section { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar">
+  <h2>目录导航</h2>
+  <span class="group-label">概述</span>
+  <a href="#overview">系统概述</a>
+  <a href="#arch">整体架构</a>
+  <span class="group-label">核心模块</span>
+  <a href="#constraint">① 预算约束生成</a>
+  <a href="#model">② S 曲线预估模型</a>
+  <a href="#optim">③ 两级最优化分配</a>
+  <a href="#forecast">④ 花费预估与校验</a>
+  <span class="group-label">规则约束</span>
+  <a href="#rules">⑤ 规则约束层</a>
+  <span class="group-label">工程落地</span>
+  <a href="#engineering">工程架构</a>
+  <a href="#metrics">监控指标</a>
+  <a href="#risk">风险控制</a>
+</nav>
+
+<main class="main">
+  <h1>信息流广告预算智能分配系统</h1>
+  <p class="subtitle">设计方案 · v1.0 &nbsp;|&nbsp; 覆盖渠道：头条 / 广点通 / 快手 &nbsp;|&nbsp; 投放目标：APP 下载新客获取</p>
+
+  <!-- ========== 系统概述 ========== -->
+  <section id="overview">
+    <h2>系统概述</h2>
+    <p>本方案针对信息流渠道 APP 下载拉新链路中两个核心痛点，设计一套基于算法的预算智能分配系统：</p>
+    <ul>
+      <li><strong>渠道内账户不均衡</strong>：同一渠道下不同账户跑量效果差异显著，需基于渠道视角合理分配各账户预算；</li>
+      <li><strong>渠道间 ROI 不均衡</strong>：全局大盘不同渠道 ROI 效果不同，需基于全局视角动态分配渠道预算。</li>
+    </ul>
+    <p>核心建设思路：将预算分配抽象为<strong>流量池最优化分解问题</strong>，通过建立"预算 - 成本 - 转化"三者的预估模型，将充沛预算优先分配给能跑量、能带来有效目标转化的账户和计划。</p>
+    <div class="callout cb-blue">
+      <strong>目标函数</strong>：在总预算约束下，最大化全链路目标转化数（新客 APP 下载激活），等价于实现最优 ROI。
+    </div>
+  </section>
+
+  <!-- ========== 整体架构 ========== -->
+  <section id="arch">
+    <h2>整体架构</h2>
+    <p>采用<strong>两级优化</strong>结构：渠道级（全局视角）先行，账户级（渠道内视角）次之，两级共享相同的 S 曲线优化框架。</p>
+    <div class="arch-box">
+      <div class="arch-row">
+        <div class="arch-tag">数据层</div>
+        <div class="arch-desc">账户消耗历史（1 日 / 3 日 / 7 日窗口）· 转化数据（CPA 成本、转化数）· 渠道 ROI 汇总 · 平台竞争度指数</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">模型层</div>
+        <div class="arch-desc">S 曲线参数拟合（每账户 T+1 凌晨更新，参数 L / r / B₀）· 花费预估模型（消耗率 × 竞争度指数）</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">优化层</div>
+        <div class="arch-desc">渠道级预算分配（全局等边际效率 · 二分迭代求解 λ）· 账户级预算分配（渠道内二分迭代，约束 [B_min, B_max]）</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">执行层</div>
+        <div class="arch-desc">日预算写入调度（每日 00:30 执行）· 盘中预算动态调整（可选，每 4 小时一次）· 投放平台 API 推送</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 模块一：预算约束 ========== -->
+  <section id="constraint">
+    <h2>模块一：预算约束生成</h2>
+    <p>每个账户的日预算取值范围 <code>[B_min, B_max]</code> 由三个历史消耗窗口共同决定，兼顾短期波动与长期运行稳定性：</p>
+    <table>
+      <thead><tr><th>窗口</th><th>数据来源</th><th>在约束中的作用</th></tr></thead>
+      <tbody>
+        <tr><td>1 日（D-1）</td><td>昨日实际消耗</td><td>短期基准，防止单日突变</td></tr>
+        <tr><td>3 日</td><td>近 3 日消耗均值 / 最大值</td><td>中期稳定性参考，平滑偶发噪声</td></tr>
+        <tr><td>7 日</td><td>近 7 日消耗均值 / 最大值</td><td>长期运行上界，防止过度扩张</td></tr>
+      </tbody>
+    </table>
+    <h3>约束计算公式</h3>
+    <div class="formula-box">
+      <div class="ftitle">预算下界（最小保障）</div>
+      <div class="fexpr">B_min = max( P10(近7日消耗), 3日均值 × 0.5 )</div>
+      <div class="ftitle" style="margin-top:12px">预算上界（最大允许）</div>
+      <div class="fexpr">B_max = min( 3日最大值 × 1.5,  7日最大值 × 1.2 )</div>
+    </div>
+    <div class="callout cb-yellow">
+      <strong>冷启动兜底</strong>：若账户近 7 日有效消耗数据不足（新账户或冷启动期），B_min 取平台最低保护预算（建议 ≥500 元/日），B_max 取同渠道同类账户消耗分布的 P50 水位，避免新账户在竞争中被完全剥夺预算。
+    </div>
+  </section>
+
+  <!-- ========== 模块二：S 曲线模型 ========== -->
+  <section id="model">
+    <h2>模块二："预算 - 成本 - 转化" S 曲线预估模型</h2>
+    <p><strong>核心假设</strong>：在固定 CPA 目标成本约束下，目标转化数随预算增大呈 S 型增长——初期边际效率高（预算充裕、流量充足），后期因竞争加剧边际效率递减，最终趋于饱和（流量容量上限 L）。</p>
+
+    <h3>S 曲线转化预估公式</h3>
+    <div class="formula-box">
+      <div class="ftitle">转化数预估（Logistic S 曲线）</div>
+      <div class="fexpr">Conv(B) = L / ( 1 + exp( −r · (B − B₀) ) )</div>
+      <div class="fnote">
+        L  ：转化容量上限（历史最大转化 × 放大系数 α，建议 α = 1.2）<br>
+        r  ：增长斜率（拟合参数，反映预算对转化的敏感程度）<br>
+        B₀ ：S 曲线拐点预算（边际效率最大处，即效率斜率 k 取最大值对应的预算点）
+      </div>
+    </div>
+
+    <h3>边际效率函数（一阶导数）</h3>
+    <div class="formula-box">
+      <div class="ftitle">边际转化效率 ME(B)</div>
+      <div class="fexpr">ME(B) = dConv/dB = L·r·exp(−r·(B−B₀)) / (1 + exp(−r·(B−B₀)))²</div>
+      <div class="fnote">ME(B) 在 B = B₀ 处取得最大值 L·r/4，此后随预算增大单调递减（边际递减效应）。</div>
+    </div>
+
+    <h3>平均效率指标 k（ROI 斜率）</h3>
+    <div class="formula-box">
+      <div class="ftitle">效率斜率 k(B)  =  目标转化数 / 账户预算</div>
+      <div class="fexpr">k(B) = Conv(B) / B</div>
+      <div class="fnote">
+        最优预算点 B* 满足 k'(B*) = 0，即：ME(B*) · B* = Conv(B*)<br>
+        B* 是 S 曲线上性价比最高的预算量——边际增益等于当前平均增益的交叉点。<br>
+        预算低于 B*：增加预算可提升 k（物超所值区）；超过 B*：增加预算 k 下降（边际递减区）。
+      </div>
+    </div>
+
+    <div class="callout cb-blue">
+      <strong>参数拟合方法</strong>：以账户近 30 日「日预算 → 日转化数」历史数据对，通过最小二乘法（Levenberg-Marquardt 算法）拟合 L、r、B₀ 三个参数，每日 T+1 凌晨更新一次。若有效数据点不足 7 个，退化为线性外推模型（Conv ≈ k̄·B，k̄ 为近期平均效率）。
+    </div>
+  </section>
+
+  <!-- ========== 模块三：两级优化 ========== -->
+  <section id="optim">
+    <h2>模块三：两级最优化分配</h2>
+
+    <h3>3.1 理论基础：等边际效率原则（拉格朗日乘子法）</h3>
+    <p>对于集合内任意分配单元（账户或渠道），在总预算等式约束与各单元预算区间约束下，求解最优分配：</p>
+    <div class="formula-box">
+      <div class="ftitle">优化目标</div>
+      <div class="fexpr">max  Σᵢ Conv_i(Bᵢ)<br>s.t. Σᵢ Bᵢ = B_total<br>     B_min,i ≤ Bᵢ ≤ B_max,i   ∀ i</div>
+      <div class="ftitle" style="margin-top:12px">KKT 最优条件（等边际效率）</div>
+      <div class="fexpr">ME_i(Bᵢ*) = ME_j(Bⱼ*) = λ   ∀ i,j（未触及约束边界的单元间）</div>
+      <div class="fnote">直觉：若账户 A 的边际转化效率 > 账户 B，则从 B 抽取预算转移给 A 可提升总转化；持续调整直至两者边际效率相等，此时总转化数达到最大。</div>
+    </div>
+
+    <h3>3.2 求解算法：二分法迭代（无需 LP 库）</h3>
+    <pre><code><span class="c"># 输入：各分配单元的 S 曲线参数、约束区间 [B_min,B_max]、总预算 B_total</span>
+<span class="k">def</span> allocate(units, B_total):
+
+    <span class="c"># 给定 λ，对单元 u 反解预算（ME(B)=λ 的解，截断至约束区间）</span>
+    <span class="k">def</span> solve_B(u, lam):
+        B = ME_inverse(u.L, u.r, u.B0, lam)  <span class="c"># 解析式或数值求逆</span>
+        <span class="k">return</span> clip(B, u.B_min, u.B_max)
+
+    <span class="c"># 二分搜索 λ 使 ΣB_i = B_total</span>
+    lo, hi = <span class="n">0</span>, MAX_ME
+    <span class="k">while</span> hi - lo > EPS:
+        lam = (lo + hi) / <span class="n">2</span>
+        total = sum(solve_B(u, lam) <span class="k">for</span> u <span class="k">in</span> units)
+        <span class="k">if</span> total > B_total:
+            lo = lam   <span class="c"># λ 太小 → 各单元分得预算过多 → 提高 λ</span>
+        <span class="k">else</span>:
+            hi = lam   <span class="c"># λ 太大 → 各单元分得预算不足 → 降低 λ</span>
+
+    <span class="k">return</span> {u.id: solve_B(u, (lo+hi)/<span class="n">2</span>) <span class="k">for</span> u <span class="k">in</span> units}</code></pre>
+    <p>收敛条件：<code>|ΣBᵢ − B_total| &lt; 100 元</code>，或迭代超 50 次取最近解。时间复杂度 O(N·log(MAX_ME/EPS))。</p>
+
+    <h3>3.3 两级分配执行顺序</h3>
+    <table>
+      <thead><tr><th>级别</th><th>优化对象</th><th>约束输入</th><th>输出结果</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag">第一级</span> 渠道级</td>
+          <td>头条 / 广点通 / 快手 三渠道</td>
+          <td>各渠道历史预算上下界；总日预算 B_total</td>
+          <td>各渠道当日预算额度 B_channel</td>
+        </tr>
+        <tr>
+          <td><span class="tag">第二级</span> 账户级</td>
+          <td>渠道内所有账户（每渠道独立求解）</td>
+          <td>各账户 [B_min, B_max]；渠道预算 B_channel</td>
+          <td>各账户当日预算 B_account</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout cb-purple">
+      <strong>渠道聚合曲线构建</strong>：渠道级 S 曲线 = 渠道内所有账户 S 曲线的垂直叠加（在相同 λ 水平下，各账户最优预算之和 vs. 渠道总转化数），保证两级分配结果全局自洽。
+    </div>
+  </section>
+
+  <!-- ========== 模块四：花费预估 ========== -->
+  <section id="forecast">
+    <h2>模块四：花费预估与校验调整</h2>
+    <p>在确定理论最优预算后，引入<strong>花费预估服务</strong>验证预算的实际可消耗性，防止"名义高预算但实际跑不出去"导致的预算浪费。</p>
+
+    <h3>预估模型输入与输出</h3>
+    <table>
+      <thead><tr><th>输入因子</th><th>说明</th><th>获取方式</th></tr></thead>
+      <tbody>
+        <tr><td>历史消耗率 η_a</td><td>近 7 日「实际消耗 / 分配预算」均值，反映账户跑量能力</td><td>内部数据仓库</td></tr>
+        <tr><td>竞争度系数 γ</td><td>渠道当日流量竞争水位（影响出价有效性）</td><td>平台 API 或内部模型估算</td></tr>
+        <tr><td>出价水位比 β_a</td><td>账户当前 oCPX 出价 / 渠道均值出价</td><td>投放后台拉取</td></tr>
+      </tbody>
+    </table>
+    <div class="formula-box">
+      <div class="ftitle">预估实消金额</div>
+      <div class="fexpr">Ŝ_a = B_a × η_a × γ × β_a</div>
+      <div class="fnote">其中 β_a > 1 表示高于均值出价，消耗能力更强；γ > 1 表示竞争激烈，整体消耗能力下降。</div>
+    </div>
+
+    <h3>校验调整规则</h3>
+    <table>
+      <thead><tr><th>触发条件</th><th>判断</th><th>执行动作</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>Ŝ_a &lt; 0.8 × B_a</code></td>
+          <td><span class="tag tag-y">消耗不足</span></td>
+          <td>释放超额预算（B_a − Ŝ_a × 1.1），重新注入渠道预算池，触发该渠道内账户级局部重分配</td>
+        </tr>
+        <tr>
+          <td><code>Ŝ_a &gt; B_a</code></td>
+          <td><span class="tag tag-r">超消风险</span></td>
+          <td>预算上界截断至 B_a × 1.05，同时下调出价水位保护成本</td>
+        </tr>
+        <tr>
+          <td><code>0.8×B_a ≤ Ŝ_a ≤ B_a</code></td>
+          <td><span class="tag tag-g">正常</span></td>
+          <td>无需调整，直接写入投放平台</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout cb-green">
+      <strong>预算上移逻辑</strong>：释放的预算重新进入渠道级二分优化，按等边际效率原则再次分配至消耗能力更强的账户，确保渠道总预算不浪费、全局转化数最大化。
+    </div>
+  </section>
+
+
+  <!-- ========== 规则约束层 ========== -->
+  <section id="rules">
+    <h2>模块五：等边际效率规则约束层（修订版）</h2>
+    <p>在等边际效率优化框架上叠加三条业务规则。核心修订点：<strong>规则一</strong>将动态均值基准改为历史 P50 固定基准，将点估计闸判据改为区间平均消耗率，并将"预算锁定→回收→重分配"设计为独立显式步骤，与花费预估校验模块职责完全分离。</p>
+
+    <div class="callout cb-blue">
+      <strong>两大机制的职责边界（核心修订）</strong>
+      <table style="margin-top:10px">
+        <thead><tr><th>机制</th><th>处理对象</th><th>触发时机</th><th>决策依据</th><th>输出</th></tr></thead>
+        <tbody>
+          <tr><td><strong>规则一门槛</strong></td><td>分配资格（准入控制）</td><td>账户级分配之后、花费预估之前</td><td>S_a(B) 花费能力曲线 + η_P50_c</td><td>锁定/允许状态；释放的 ΔB</td></tr>
+          <tr><td><strong>花费预估校验</strong></td><td>执行可行性（能否花出去）</td><td>预算最终确定之后</td><td>历史消耗率 × 流量指数 × 出价水位</td><td>Ŝ_a；消耗不足/超消微调</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>规则一（修订版）：低跑量账户增益准入门槛</h3>
+
+    <h4 style="font-size:13px;font-weight:600;color:#334155;margin:16px 0 8px">1.1 基准修订：η_P50_c 替代 η̄_c</h4>
+    <p>原方案以渠道当日动态均值 η̄_c 作为判断基准，存在循环依赖——大量低效账户会拉低均值，导致阈值随之松动，低跑量账户被漏判。修订为使用<strong>渠道历史 7 日滚动 P50 消耗率</strong>作为固定参照系：</p>
+    <div class="formula-box">
+      <div class="ftitle">渠道历史 P50 消耗率（固定基准）</div>
+      <div class="fexpr">η_P50_c = P50( { η_c,d : d ∈ [D-7, D-1] } )</div>
+      <div class="fnote">η_c,d = 渠道 c 在第 d 日的整体消耗率（实际消耗 / 分配预算）；P50 取7日分布中位数，不受当日低效账户拖累，稳定性高于动态均值。</div>
+      <div class="ftitle" style="margin-top:12px">受限状态触发条件（不变）</div>
+      <div class="fexpr">η_a &lt; 0.8 × η_P50_c   →   账户 a 标记为"受限账户"</div>
+    </div>
+
+    <h4 style="font-size:13px;font-weight:600;color:#334155;margin:16px 0 8px">1.2 第二关判据修订：区间平均消耗率替代一阶导数点估计</h4>
+    <p>原方案用 ∂S_a/∂B（一阶导数）作为第二关判据，存在量纲混淆：点估计仅反映某一预算水位处的瞬时斜率，无法代表增量预算在整个区间内的实际消耗能力。修订为<strong>区间平均消耗率测试</strong>：</p>
+    <div class="formula-box">
+      <div class="ftitle">增量预算区间</div>
+      <div class="fexpr">ΔB_proposed = max(0,  B_a_proposed − B_a_current)</div>
+      <div class="fnote">B_a_proposed：账户第一轮等边际效率分配得到的理论预算；B_a_current：账户当前实际运行预算（前一日终值）</div>
+      <div class="ftitle" style="margin-top:12px">增量区间平均消耗率（第二关判据）</div>
+      <div class="fexpr">η_interval_a = [ S_a(B_a_current + ΔB) − S_a(B_a_current) ] / ΔB</div>
+      <div class="fnote">S_a(B)：账户花费能力曲线（由历史「日分配预算→日实消」数据对拟合的 S 型函数，T+1 同步更新）<br>
+      η_interval_a 表示：将 ΔB 额外预算拨给该账户，这笔钱平均能被花出去多少比例</div>
+      <div class="ftitle" style="margin-top:12px">准入条件</div>
+      <div class="fexpr">η_interval_a  &gt;  η_P50_c</div>
+      <div class="fnote">含义：增量预算的区间平均消耗率须高于渠道历史 P50 水位；低于则说明这笔预算交给该账户会大概率消耗不掉，应拒绝增配</div>
+    </div>
+
+    <div class="callout cb-yellow">
+      <strong>为何区间平均优于点导数？</strong> 一个账户可能在 B_a_current 处的瞬时边际斜率很高（点导数通过），但由于其 S_a(B) 曲线的容量上限 L 很低，ΔB 区间内的实际消耗会迅速饱和，真实区间平均消耗率远低于点估计。区间测试能捕捉这种"饱和快"的情况，更贴近实际跑量结果。
+    </div>
+
+    <h4 style="font-size:13px;font-weight:600;color:#334155;margin:16px 0 8px">1.3 预算锁定与回收重分配（新增独立步骤）</h4>
+    <p>规则一的执行结果不再依赖花费预估校验隐式处理，而是设计为账户级分配后的<strong>显式独立步骤</strong>：</p>
+    <table>
+      <thead><tr><th>账户状态</th><th>判定逻辑</th><th>处理方式</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-g">正常账户</span></td><td>η_a ≥ 0.8 × η_P50_c</td><td>B_a_final = B_a_proposed（保留第一轮分配结果）</td></tr>
+        <tr><td><span class="tag tag-g">受限但通过</span></td><td>η_a &lt; 0.8 × η_P50_c 且 η_interval_a &gt; η_P50_c</td><td>B_a_final = B_a_proposed（允许增配）</td></tr>
+        <tr><td><span class="tag tag-r">受限且锁定</span></td><td>η_a &lt; 0.8 × η_P50_c 且 η_interval_a ≤ η_P50_c</td><td>B_a_final = B_a_current；ΔB = B_proposed − B_current 释放至回收池</td></tr>
+      </tbody>
+    </table>
+    <div class="formula-box">
+      <div class="ftitle">预算回收与二次等边际分配</div>
+      <div class="fexpr">Pool = Σ ΔB_a   （所有锁定账户释放的增量预算之和）</div>
+      <div class="fexpr" style="margin-top:8px">B_remaining = B_channel − Σ B_a_current（锁定账户）</div>
+      <div class="fexpr" style="margin-top:8px">对合格账户集合（正常 + 受限但通过）重新运行等边际效率二分迭代，总预算 = B_remaining</div>
+      <div class="fnote">合格账户的最终预算 B_a_final 由二次分配结果决定，替代第一轮结果；整个渠道总预算 B_channel 保持不变，无预算浪费</div>
+    </div>
+
+    <h3>规则二：预算与出价解耦原则（不变）</h3>
+    <p>渠道总预算规模不变（ΔB_channel = 0）时，系统仅执行账户间预算再分配，<strong>严禁干预账户出价</strong>。</p>
+    <div class="formula-box">
+      <div class="ftitle">模型约束：S 曲线以当前出价为固定参数</div>
+      <div class="fexpr">Conv(B | bid = bid_fixed)   优化变量仅为预算 B，出价为外生参数</div>
+      <div class="fnote">本系统负责预算层（Budget Layer），出价由 oCPX 或独立出价模块负责（Bid Layer），两层解耦，防止双向干预引发震荡。</div>
+    </div>
+
+    <h3>规则三：流量分层驱动的跑量能力评估（补充与规则一的协同）</h3>
+    <p>账户消耗速率受媒体流量分层与时段流量大小共同驱动，将流量指数纳入跑量能力评估。<strong>重要联动</strong>：规则一中的 η_P50_c 计算应使用流量归一化后的消耗率，避免高峰期账户因时段性消耗偏低被误触发受限状态。</p>
+    <div class="formula-box">
+      <div class="ftitle">流量归一化消耗率（用于规则一基准计算）</div>
+      <div class="fexpr">η_a_norm = η_a_raw / T_c(t_eval)</div>
+      <div class="fnote">t_eval：评估时刻；T_c(t_eval)：渠道在评估时刻的流量指数；η_a_norm 消除了时段流量差异，使跨时段的跑量能力具有可比性</div>
+      <div class="ftitle" style="margin-top:12px">流量修正花费预估（Module 4 基础上修订，引入分时流量）</div>
+      <div class="fexpr">Ŝ_a(t) = B_a × η_a_base × T_c(t) × γ(t) × β_a</div>
+      <div class="fnote">T_c(t)：当前时段流量指数；γ(t)：时段竞争度系数（随时段动态变化）；三条规则共同作用：规则三提升 η 精度 → 规则一准确识别低效账户 → 规则二保证只调预算不动出价</div>
+    </div>
+  </section>
+
+  <!-- ========== 工程架构 ========== -->
+  <section id="engineering">
+    <h2>工程架构</h2>
+    <p>系统分为离线建模与在线调度两条链路，日常以离线为主，盘中动态调整为可选增强：</p>
+    <div class="two-col">
+      <div>
+        <h3>离线链路（T+1 凌晨）</h3>
+        <ul>
+          <li>00:00 — 数据拉取（消耗、转化、ROI）</li>
+          <li>00:10 — 约束区间计算（1/3/7日窗口）</li>
+          <li>00:20 — S 曲线参数更新（LM 拟合）</li>
+          <li>00:25 — 两级预算优化求解</li>
+          <li>00:30 — 花费预估校验 + 预算写入</li>
+        </ul>
+      </div>
+      <div>
+        <h3>在线链路（盘中动态，可选）</h3>
+        <ul>
+          <li>每 4 小时检查消耗进度</li>
+          <li>触发条件：实消 &lt; 预算 × 累计消耗率 × 0.7</li>
+          <li>执行：账户级局部预算再分配</li>
+          <li>保护：单次调整幅度 ≤ 30%，防止剧烈波动</li>
+        </ul>
+      </div>
+    </div>
+    <h3>技术依赖</h3>
+    <table>
+      <thead><tr><th>模块</th><th>技术选型</th></tr></thead>
+      <tbody>
+        <tr><td>调度</td><td>AirFlow DAG / 内部任务调度平台</td></tr>
+        <tr><td>S 曲线拟合</td><td>Python scipy.optimize.curve_fit（LM 算法）</td></tr>
+        <tr><td>二分优化</td><td>纯 Python 实现，无需 LP 库，延迟 &lt; 500ms</td></tr>
+        <tr><td>预算写入</td><td>各平台投放 API（头条 / 广点通 / 快手）</td></tr>
+        <tr><td>数据存储</td><td>Hive（离线）+ Redis（实时缓存约束参数）</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ========== 监控指标 ========== -->
+  <section id="metrics">
+    <h2>监控指标</h2>
+    <p>建立四类核心监控，覆盖预算效率、转化效果、系统稳定性三个维度：</p>
+    <div class="two-col">
+      <div class="kpi-card"><div class="kpi-label">预算消耗率</div><div class="kpi-val">目标 ≥ 90%</div><div class="kpi-desc">全渠道（实际消耗 / 分配预算）日均值</div></div>
+      <div class="kpi-card"><div class="kpi-label">k 效率斜率</div><div class="kpi-val">环比优化</div><div class="kpi-desc">全局转化数 / 总预算，衡量整体效率</div></div>
+      <div class="kpi-card"><div class="kpi-label">渠道预算偏差</div><div class="kpi-val">≤ ±15%</div><div class="kpi-desc">渠道实际消耗 vs 分配预算的日偏差</div></div>
+      <div class="kpi-card"><div class="kpi-label">模型预测误差</div><div class="kpi-val">MAPE ≤ 20%</div><div class="kpi-desc">Ŝ_a vs 实际消耗的平均绝对百分误差</div></div>
+    </div>
+    <h3>告警阈值</h3>
+    <table>
+      <thead><tr><th>告警类型</th><th>触发条件</th><th>处理建议</th></tr></thead>
+      <tbody>
+        <tr><td>预算严重未消耗</td><td>渠道消耗率连续 2 日 &lt; 70%</td><td>重新校准 S 曲线 L 参数（降低容量估计）</td></tr>
+        <tr><td>超消风险</td><td>账户日内消耗超预算 10%</td><td>立即触发截断，更新 η_a 消耗率</td></tr>
+        <tr><td>效率大幅下降</td><td>k 值周环比下降 &gt; 20%</td><td>检查 CPA 成本漂移，触发模型重训</td></tr>
+        <tr><td>调度失败</td><td>写入 API 响应异常</td><td>保持昨日预算不变，触发人工介入告警</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ========== 风险控制 ========== -->
+  <section id="risk">
+    <h2>风险控制</h2>
+    <div class="callout cb-red">
+      <strong>核心原则</strong>：算法输出作为决策建议，所有超过阈值的预算调整操作应先在沙盒环境验证，并设置人工审核卡口，防止算法异常引发大规模亏损。
+    </div>
+    <table>
+      <thead><tr><th>风险场景</th><th>防控措施</th></tr></thead>
+      <tbody>
+        <tr><td>单次预算调整幅度过大</td><td>单账户日预算单次调整 ≤ 昨日预算的 50%，渠道级 ≤ 30%</td></tr>
+        <tr><td>S 曲线过拟合（数据稀少）</td><td>有效样本 &lt; 7 时退化为线性模型，禁止大幅扩预算</td></tr>
+        <tr><td>渠道 API 限流/故障</td><td>写入失败时保持前一日预算，自动重试 3 次后告警</td></tr>
+        <tr><td>新渠道/新账户冷启动</td><td>首 7 日强制使用固定预算（P50 水位），禁止参与优化竞争</td></tr>
+        <tr><td>大促/节日流量异常</td><td>节假日预设专项规则覆盖算法输出，人工审核日预算上限</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div style="margin-top:48px; padding-top:18px; border-top:1px solid #e2e8f0; color:#94a3b8; font-size:12px;">
+    信息流广告预算智能分配系统设计方案 · 头条 / 广点通 / 快手 APP 下载拉新链路
+  </div>
+</main>
+</div>
+</body>
+</html>

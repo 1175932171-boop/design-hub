@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTA策略验证体系：分流机制与验证方法</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.7; }
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: #0f172a; color: #cbd5e1; padding: 24px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+.sidebar h2 { color: #f8fafc; font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #1e293b; }
+.sidebar .group-label { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 6px 4px; display: block; }
+.sidebar a { display: block; color: #94a3b8; text-decoration: none; font-size: 12px; padding: 5px 8px; border-radius: 4px; margin-bottom: 1px; }
+.sidebar a:hover { background: #1e293b; color: #f1f5f9; }
+.main { flex: 1; padding: 40px 52px 60px; max-width: 960px; }
+h1 { font-size: 25px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+.subtitle { color: #64748b; font-size: 13px; margin-bottom: 10px; }
+.meta-row { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 22px; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; }
+.meta-item { font-size: 12px; color: #94a3b8; }
+.meta-item strong { color: #64748b; }
+h2 { font-size: 17px; font-weight: 700; color: #0f172a; margin: 40px 0 14px; padding-left: 12px; border-left: 4px solid #3b82f6; }
+h3 { font-size: 14px; font-weight: 600; color: #334155; margin: 22px 0 9px; }
+h4 { font-size: 13px; font-weight: 600; color: #475569; margin: 16px 0 7px; }
+p { margin-bottom: 12px; font-size: 13.5px; line-height: 1.85; }
+ul, ol { margin: 0 0 12px 18px; font-size: 13.5px; line-height: 1.85; }
+li { margin-bottom: 4px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+th { background: #f1f5f9; padding: 9px 13px; text-align: left; font-weight: 600; color: #374151; border: 1px solid #e2e8f0; }
+td { padding: 8px 13px; border: 1px solid #e2e8f0; color: #374151; vertical-align: top; line-height: 1.7; }
+tr:nth-child(even) td { background: #f8fafc; }
+pre { background: #1e293b; color: #e2e8f0; padding: 16px 18px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.8; margin: 12px 0; }
+code { background: #f1f5f9; color: #dc2626; padding: 2px 5px; border-radius: 3px; font-family: "Courier New", monospace; font-size: 12.5px; }
+.callout { padding: 13px 16px; border-radius: 7px; margin: 14px 0; font-size: 13px; line-height: 1.75; }
+.cb-blue  { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.cb-yellow{ background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.cb-green { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.cb-red   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.cb-purple{ background: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6; }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-right: 4px; }
+.tag-blue  { background: #e0e7ff; color: #3730a3; }
+.tag-green { background: #dcfce7; color: #166534; }
+.tag-yellow{ background: #fef9c3; color: #92400e; }
+.tag-red   { background: #fee2e2; color: #991b1b; }
+.tag-gray  { background: #f1f5f9; color: #475569; }
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+.card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; }
+.card-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.card-val { font-size: 20px; font-weight: 800; color: #0f172a; }
+.card-desc { font-size: 12px; color: #94a3b8; margin-top: 4px; line-height: 1.6; }
+.arch-box { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin: 14px 0; background: white; }
+.arch-row { display: flex; align-items: stretch; border-bottom: 1px solid #e2e8f0; }
+.arch-row:last-child { border-bottom: none; }
+.arch-tag { width: 90px; background: #0f172a; color: #e2e8f0; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px 8px; flex-shrink: 0; line-height: 1.5; }
+.arch-desc { flex: 1; padding: 13px 16px; font-size: 13px; color: #374151; line-height: 1.8; }
+.step-box { counter-reset: step; margin: 14px 0; }
+.step { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+.step-num { width: 24px; height: 24px; border-radius: 50%; background: #3b82f6; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.step-body { flex: 1; font-size: 13.5px; line-height: 1.8; }
+.flow-box { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px 22px; margin: 14px 0; }
+.flow-row { display: flex; align-items: center; gap: 0; margin-bottom: 6px; }
+.flow-node { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 14px; font-size: 12.5px; color: #1e293b; font-weight: 600; white-space: nowrap; }
+.flow-node.green  { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.flow-node.blue   { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+.flow-node.yellow { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.flow-node.red    { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+.flow-node.gray   { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+.flow-arrow { font-size: 16px; color: #94a3b8; padding: 0 8px; }
+.divider { height: 1px; background: #e2e8f0; margin: 32px 0; }
+section { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- 侧边导航 -->
+<nav class="sidebar">
+  <h2>RTA 分流机制</h2>
+  <span class="group-label">Part I · 分流基础</span>
+  <a href="#s1">1. 背景与工程约束</a>
+  <a href="#s2">2. 分流ID选择</a>
+  <a href="#s3">3. 分层哈希设计</a>
+  <a href="#s4">4. 三类流量处理</a>
+  <span class="group-label">Part II · 分桶设计</span>
+  <a href="#s5">5. 10桶分配结构</a>
+  <a href="#s6">6. 跨平台一致性</a>
+  <span class="group-label">Part III · 验证体系</span>
+  <a href="#s7">7. 浓度均匀的两阶段标准</a>
+  <a href="#s8">8. 层面一：梯度校验</a>
+  <a href="#s9">9. 层面二：版本对照</a>
+  <span class="group-label">Part IV · 决策与风险</span>
+  <a href="#s10">10. 决策流程</a>
+  <a href="#s11">11. 风险与待对齐事项</a>
+</nav>
+
+<!-- 主内容 -->
+<main class="main">
+
+<h1>RTA策略验证体系</h1>
+<p class="subtitle">分流机制设计 · 桶内梯度校验 · 版本整体对照</p>
+<div class="meta-row">
+  <span class="meta-item"><strong>适用范围：</strong>媒体侧固定10分桶约束（巨量、腾讯等渠道）</span>
+  <span class="meta-item"><strong>文档状态：</strong>评审稿 · 待算法/数据团队对齐</span>
+  <span class="meta-item"><strong>更新日期：</strong>2026年6月</span>
+</div>
+
+<!-- =========================================
+     Part I · 分流基础
+     ========================================= -->
+
+<h2 id="s1">一、背景与工程约束</h2>
+
+<p>RTA（Real-Time API）是广告主在媒体竞价过程中，通过实时接口针对每一次曝光请求返回差异化出价的机制。核心目标是：<strong>根据用户价值精准出价，花合理的价格买到合适的用户</strong>。</p>
+
+<div class="arch-box">
+  <div class="arch-row">
+    <div class="arch-tag">媒体约束</div>
+    <div class="arch-desc">头条（巨量）、腾讯、百度、快手等渠道均提供 <strong>固定10个分桶</strong>，这是不可绕过的工程硬约束。一个RTA实验对应一个RTA策略，一个策略最多覆盖10个分桶，10个分桶对应最多10套差异化出价档位。</div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-tag">验证目标</div>
+    <div class="arch-desc">验证两类问题：① 同一策略版本内，10档出价梯度是否合理（性价比最优区间在哪）；② 策略版本迭代后，新版本整体是否优于旧版本。</div>
+  </div>
+  <div class="arch-row">
+    <div class="arch-tag">跨平台挑战</div>
+    <div class="arch-desc">同一用户可能在头条、腾讯、百度、快手多个平台同时产生曝光请求，需保证该用户在所有平台归属同一实验桶，否则跨平台对照无效。</div>
+  </div>
+</div>
+
+<!-- ===== -->
+
+<h2 id="s2">二、分流ID选择：userid vs deviceid</h2>
+
+<h3>2.1 三类RTA请求场景</h3>
+
+<table>
+  <tr><th>场景</th><th>描述</th><th>占比参考</th></tr>
+  <tr><td><span class="tag tag-blue">类型①</span> 有userid</td><td>已登录用户，可通过ID Mapping将媒体deviceid映射到广告主内部userid</td><td>~40–70%</td></tr>
+  <tr><td><span class="tag tag-yellow">类型②</span> 仅有deviceid</td><td>匿名用户，RTA请求只含IDFA/OAID，无法关联到内部userid</td><td>~20–40%</td></tr>
+  <tr><td><span class="tag tag-gray">类型③</span> 无任何ID</td><td>iOS限制追踪或特殊设备，IDFA全零，无法获取任何有效标识</td><td>~5–10%</td></tr>
+</table>
+
+<h3>2.2 两种分流方案的核心矛盾</h3>
+
+<table>
+  <tr><th>评估维度</th><th>userid 分流</th><th>deviceid 分流</th></tr>
+  <tr><td>用户分层浓度均匀</td><td><span class="tag tag-green">✓ 数学保证</span></td><td><span class="tag tag-red">✗ 多设备导致失真</span></td></tr>
+  <tr><td>跨平台桶归属一致</td><td><span class="tag tag-green">✓ 完全一致</span></td><td><span class="tag tag-red">✗ 不同平台可能不同桶</span></td></tr>
+  <tr><td>用户信号完整性</td><td><span class="tag tag-green">✓ 单用户信号聚合</span></td><td><span class="tag tag-red">✗ 多设备信号分裂至多个桶</span></td></tr>
+  <tr><td>流量覆盖率</td><td><span class="tag tag-yellow">仅限登录用户</span></td><td><span class="tag tag-green">✓ 含匿名用户，覆盖更广</span></td></tr>
+  <tr><td>分析可解释性</td><td><span class="tag tag-green">✓ 用户级归因清晰</span></td><td><span class="tag tag-red">✗ 跨桶归因模糊</span></td></tr>
+</table>
+
+<div class="callout cb-red">
+  <strong>deviceid多设备分裂的具体危害：</strong>S级高价值用户若持有3台设备（d1/d2/d3），deviceid哈希后可能落入桶2、桶7、桶4三个不同桶。该用户的S级价值信号被稀释到3个桶，每个桶的S级"用户浓度"均被虚增或虚减，导致"初始浓度一致性"从根本上无法保证。
+</div>
+
+<div class="callout cb-green">
+  <strong>结论：</strong>从"各桶人群分层初始浓度绝对一致"的实验置信要求出发，<strong>userid分流是唯一能数学保证浓度均匀性的方案</strong>。deviceid的高覆盖率优势，是以浓度准确性和用户信号完整性为代价换来的，在需要初始浓度置信的前提下，此代价不可接受。
+</div>
+
+<!-- ===== -->
+
+<h2 id="s3">三、分层哈希设计（初始浓度一致性保障）</h2>
+
+<h3>3.1 问题：纯哈希无法保证各层浓度均匀</h3>
+
+<p>即便使用userid，若直接执行 <code>bucket = hash(userid) % 10</code>，也只能保证各桶用户<strong>数量</strong>均匀，无法保证各桶内S/A/B/C各层的<strong>占比</strong>一致。例如S级高价值用户恰好集中在桶0–2，则任何桶间对比的效果差异都可能是"初始人群偏差"而非"出价策略"造成的。</p>
+
+<h3>3.2 解法：先分层，层内再分桶</h3>
+
+<div class="callout cb-purple">
+  <strong>分层哈希核心逻辑：</strong>对每个用户，先按价值模型归入tier，再在该tier内部独立执行哈希分桶。这样数学上保证：S层1000人 → 每桶约100人；A层3000人 → 每桶约300人。所有桶的人群分层浓度在期望上完全一致。
+</div>
+
+<pre>
+Step 1：价值模型分层
+    tier = value_model(userid)
+    → {S: LTV Top 10%,  A: 10%–30%,  B: 30%–60%,  C: 60%以下}
+
+Step 2：层内哈希分桶（各层独立执行）
+    bucket_id = MurmurHash3(userid) % 10
+    → 层内随机均匀分配，[0, 9] 各桶均等
+
+结果：任意tier T，bucket_id ∈ [0,9] 中每个桶约含 T层总量 × 10%
+    → 10个桶的 S/A/B/C 层占比在统计上完全一致
+</pre>
+
+<h3>3.3 分层 vs 分桶的独立性（关键概念解耦）</h3>
+
+<table>
+  <tr><th>维度</th><th>分桶（Bucket）</th><th>分层（Tier）</th></tr>
+  <tr><td>决定依据</td><td>userid哈希，永久固定</td><td>用户行为/价值模型，动态更新</td></tr>
+  <tr><td>含义</td><td>该用户参与哪个实验组</td><td>对该用户当前应出多少价</td></tr>
+  <tr><td>随时间变化</td><td>不变（保证实验追溯性）</td><td>随活跃度/消费行为变化</td></tr>
+  <tr><td>实验分析依据</td><td>用实验启动时（T=0）的分桶快照</td><td>用实验启动时的tier快照做起点校验</td></tr>
+</table>
+
+<div class="callout cb-yellow">
+  用户在实验运行期间从B层升至A层，其<strong>bucket不变</strong>（保证追溯性），而<strong>出价策略按新tier执行</strong>（保证精准性）。初始浓度一致性校验，应用T=0时刻的tier快照，而非实时tier。
+</div>
+
+<h3>3.4 均匀性验证（实验启动前 AA 测试）</h3>
+
+<table>
+  <tr><th>验证项</th><th>方法</th><th>通过阈值</th></tr>
+  <tr><td>分桶用户数均匀性</td><td>χ²检验（10桶 vs 期望10%）</td><td>p &gt; 0.05</td></tr>
+  <tr><td>各桶tier分布一致性</td><td>KS检验，各层占比跨桶对比</td><td>偏差 &lt; 3%</td></tr>
+  <tr><td>历史行为特征均匀性</td><td>各桶历史CVR/CTR方差检验</td><td>变异系数 CV &lt; 10%</td></tr>
+</table>
+
+<!-- ===== -->
+
+<h2 id="s4">四、三类流量的分级处理策略</h2>
+
+<pre>
+RTA请求到达
+     ↓
+优先级1：userid 是否可获取？（ID Mapping命中 OR 登录态）
+    → 是：走 userid 分桶  ——→  主实验人群（用户级归因，跨平台汇总）
+     ↓ 否
+优先级2：deviceid 是否有效？（存在且非全零）
+    → 是：走 deviceid 分桶  ——→  副实验人群（设备级，独立分析，不混合主实验）
+     ↓ 否
+优先级3：无任何ID
+    → 走统一底价策略  ——→  不纳入实验，计入覆盖率分母
+</pre>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-title">主实验人群（userid）</div>
+    <div class="card-val" style="font-size:14px;color:#1d4ed8;">用户级归因</div>
+    <div class="card-desc">验证用户价值驱动的RTA出价准度；分层哈希保证初始浓度一致；跨平台汇总，结论具备全局效力。</div>
+  </div>
+  <div class="card">
+    <div class="card-title">副实验人群（deviceid）</div>
+    <div class="card-val" style="font-size:14px;color:#92400e;">设备级归因</div>
+    <div class="card-desc">验证匿名用户场景下RTA覆盖有效性；仅保证设备数量均匀；不与主实验人群混合计算，单独建模分析。</div>
+  </div>
+</div>
+
+<!-- =========================================
+     Part II · 分桶设计
+     ========================================= -->
+
+<h2 id="s5">五、10桶分配结构</h2>
+
+<h3>5.1 标准实验分配（验证单一出价策略）</h3>
+
+<table>
+  <tr><th>分桶编号</th><th>实验角色</th><th>流量占比</th><th>说明</th></tr>
+  <tr><td>桶 0–3</td><td><span class="tag tag-blue">实验组</span></td><td>40%</td><td>新RTA出价策略，差异化出价干预</td></tr>
+  <tr><td>桶 4–7</td><td><span class="tag tag-yellow">对照组</span></td><td>40%</td><td>基准出价/旧策略，作为相对基准</td></tr>
+  <tr><td>桶 8–9</td><td><span class="tag tag-red">HoldOut 组</span></td><td>20%</td><td>完全不出价，度量RTA对大盘的绝对增量贡献</td></tr>
+</table>
+
+<div class="callout cb-blue">
+  <strong>HoldOut组的必要性：</strong>普通对照组只能验证"新策略 vs 旧策略"，无法回答"RTA整体是否有价值"。HoldOut桶完全退出竞价，用于计算：<br>
+  RTA增量ROI = （HoldOut组转化成本 − 实验组转化成本）/ HoldOut组成本
+</div>
+
+<h3>5.2 多策略并行实验（10桶全用）</h3>
+
+<table>
+  <tr><th>分桶</th><th>策略方向</th><th>出价倍率</th><th>实验目的</th></tr>
+  <tr><td>桶 0–1</td><td>激进出价</td><td>×1.5</td><td>测高出价是否提升转化质量</td></tr>
+  <tr><td>桶 2–3</td><td>标准出价</td><td>×1.0</td><td>基准参考组</td></tr>
+  <tr><td>桶 4–5</td><td>保守出价</td><td>×0.7</td><td>测低出价成本节约空间</td></tr>
+  <tr><td>桶 6–7</td><td>动态出价（模型）</td><td>算法决策</td><td>测算法动态出价效果</td></tr>
+  <tr><td>桶 8–9</td><td>对照组</td><td>统一底价</td><td>绝对基准</td></tr>
+</table>
+
+<h3>5.3 人群分层 × 分桶 双维度策略矩阵</h3>
+
+<p>每个桶内，RTA策略基于用户价值模型进行二级分层，实现精细化出价。桶编号（横轴）决定"参与哪个实验组"，分层结果（纵轴）决定"该次曝光出多少价"，两轴独立、互不干扰。</p>
+
+<table>
+  <tr><th></th><th>S级（Top 10%）</th><th>A级（10–30%）</th><th>B级（30–60%）</th><th>C级（60%+）</th></tr>
+  <tr><td><strong>桶 0–3（实验组）</strong></td><td>出价 ×2.0</td><td>出价 ×1.5</td><td>出价 ×1.0</td><td>出价 ×0.5</td></tr>
+  <tr><td><strong>桶 4–7（对照组）</strong></td><td>出价 ×1.0</td><td>出价 ×1.0</td><td>出价 ×1.0</td><td>出价 ×1.0</td></tr>
+  <tr><td><strong>桶 8–9（HoldOut）</strong></td><td>不出价</td><td>不出价</td><td>不出价</td><td>不出价</td></tr>
+</table>
+
+<!-- ===== -->
+
+<h2 id="s6">六、跨平台一致性保障</h2>
+
+<table>
+  <tr><th>风险场景</th><th>问题描述</th><th>解法</th></tr>
+  <tr><td>用户跨设备</td><td>同用户多设备被分到不同桶</td><td>强制userid分桶，禁用deviceid作为主分流ID</td></tr>
+  <tr><td>跨渠道溢出</td><td>实验组用户在多平台分属不同桶</td><td>所有平台共享同一userid→bucket映射表</td></tr>
+  <tr><td>策略切换污染</td><td>实验中途调整桶-策略映射</td><td>变更前须Washout期（≥3天）</td></tr>
+  <tr><td>新用户涌入偏差</td><td>大量新用户导致桶分布漂移</td><td>新用户单独入桶或实时重新校验均匀性</td></tr>
+</table>
+
+<div class="callout cb-blue">
+  <strong>ID Mapping服务：</strong>媒体RTA请求传入deviceid（IDFA/OAID/AndroidID）→ 广告主侧ID Mapping服务 → 查找对应userid（登录用户）→ 按userid哈希决定分桶及出价策略 → 50ms内返回出价结果给媒体平台。
+</div>
+
+<!-- =========================================
+     Part III · 验证体系
+     ========================================= -->
+
+<h2 id="s7">七、核心澄清：浓度均匀的两阶段标准</h2>
+
+<div class="callout cb-yellow">
+  <strong>"客群浓度需要均匀"这个要求，只在实验启动前（曝光前）成立。</strong>实验运行后（曝光后）浓度产生差异，恰恰是验证出价策略是否有效的核心证据，而不是需要消除的噪音。
+</div>
+
+<table>
+  <tr><th>阶段</th><th>浓度应该如何</th><th>原因</th></tr>
+  <tr>
+    <td><strong>阶段1：分桶分配时（曝光前）</strong></td>
+    <td><span class="tag tag-green">必须均匀</span></td>
+    <td>保证"起点公平"——不做任何出价干预时，10个桶里潜在高价值用户占比应一致，否则无法判断后续浓度差异是出价策略起作用，还是分桶本身有偏</td>
+  </tr>
+  <tr>
+    <td><strong>阶段2：策略运行后（曝光后）</strong></td>
+    <td><span class="tag tag-blue">不能强求均匀，差异才是结果</span></td>
+    <td>RTA出价的作用机制是：高出价在媒体竞价中更容易竞得高价值用户曝光。若运行后浓度仍均匀，等价于否定了RTA出价策略本身的有效性</td>
+  </tr>
+</table>
+
+<div class="callout cb-purple">
+  <strong>关键原则：</strong>"控制变量"只能用来控制起点（分桶前的潜在客群分布），不能用来控制结果（曝光后的实际浓度）。后者是因变量，是用来做赛马判断的依据，强行把它控制均匀，等于把实验结果本身抹平了。
+</div>
+
+<!-- ===== -->
+
+<h2 id="s8">八、层面一：桶内出价梯度校验</h2>
+
+<h3>8.1 适用场景</h3>
+<p>在单一RTA策略版本内部，验证10档出价梯度是否合理：出价越高，是否真的竞得了浓度越高的高价值用户；出价响应曲线是否符合预期形状。</p>
+
+<h3>8.2 起点校验（实验启动前必须执行）</h3>
+
+<div class="step-box">
+  <div class="step"><div class="step-num">1</div><div class="step-body">按pLTV排序将用户分层（与正式实验使用同一套排序逻辑）</div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body">在切换差异化出价之前，统计10个桶各自的潜在高价值用户（b浓度）占比</div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body">校验10个桶占比差异是否在可接受阈值内（如 ±2%），运行χ²检验（p &gt; 0.05）</div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body">通过 → 进入正式赛马阶段；不通过 → 排查分桶hash逻辑或pLTV排序偏差</div></div>
+</div>
+
+<h3>8.3 正式赛马：出价响应曲线校验</h3>
+
+<p>不是简单比较"哪个桶浓度最高"，而是把b浓度对出价水平做曲线拟合，校验响应曲线的合理性：</p>
+
+<table>
+  <tr><th>校验项</th><th>预期表现</th><th>异常信号</th></tr>
+  <tr><td>单调性</td><td>出价越高，b浓度越高（或至少不显著低于低出价桶）</td><td>出现非单调（如3号桶浓度高于1号桶），提示出价梯度或pLTV排序有问题</td></tr>
+  <tr><td>边际递减</td><td>浓度提升幅度随出价升高而递减，符合正常竞价市场规律</td><td>边际效应不递减甚至递增，可能是出价档位间隔设计不合理</td></tr>
+  <tr><td>拐点定位</td><td>找到"浓度提升 / 出价增量"性价比最优的区间</td><td>用于后续调权放量参考</td></tr>
+</table>
+
+<h3>8.4 输出物</h3>
+<ul>
+  <li>各桶b浓度排序与出价响应曲线图</li>
+  <li>性价比最优的出价区间，作为后续该桶流量放大的依据</li>
+  <li>曲线异常时，先排查是分桶起点偏差还是pLTV排序精度问题，而非直接归因于出价档位设置错误</li>
+</ul>
+
+<!-- ===== -->
+
+<h2 id="s9">九、层面二：策略版本整体对照机制</h2>
+
+<h3>9.1 缺口描述</h3>
+
+<p>现有机制只在"同一版策略内部"做10桶赛马，没有回答：<strong>这一整版策略相对上一版策略，整体是否更优？</strong>策略持续迭代（如5月→6月参数调整，或pLTV算法升级），每次迭代后无法证明新版本真的比旧版本好。这是当前验证体系的核心缺口。</p>
+
+<h3>9.2 为什么不能在媒体10桶上限内做版本对照</h3>
+
+<p>媒体侧的10桶上限是硬约束，无法在同一组10桶内同时编码"出价档位"和"策略版本"两个维度（即无法做到"版本A的10桶 + 版本B的10桶"同时存在）。因此版本对照必须<strong>跳出单次RTA实验的10桶框架</strong>，用独立的流量入口实现。</p>
+
+<h3>9.3 推荐方案：独立分流做整体AB对照</h3>
+
+<pre>
+总流量
+ ├── 主流量（80%~90%）→ 当前在用策略版本（如5月版）→ 10桶梯度按层面一方式运行
+ └── 对照流量（10%~20%）→ 待验证新版本（如6月版）→ 完整复刻一套10桶梯度独立运行
+
+对照逻辑：
+    不逐桶比较（5月1号桶 vs 6月1号桶意义有限，两版pLTV排序逻辑本身可能已变化）
+    而是比较"整体加权指标"：
+        整体ROI        = Σ(各桶实际转化价值) / Σ(各桶出价成本)
+        整体b浓度加权值 = Σ(各桶b浓度 × 该桶流量占比)
+        整体出价准度偏差 = (整体实际转化价值 - 整体出价成本) / 整体出价成本
+</pre>
+
+<h3>9.4 分流方式：双层独立哈希</h3>
+
+<pre>
+Step 1：版本分流（新增一层，独立于桶内梯度分流）
+    version_group = hash(unified_uid + version_salt) % 100
+    若 version_group &lt; 15  → 对照流量（待验证新版本）
+    否则                   → 主流量（当前在用版本）
+
+Step 2：各版本内部按层面一逻辑做10桶梯度分配
+    bucket = hash(unified_uid + bucket_salt) % 10
+
+关键：两次哈希使用不同的 salt，保证版本分流与桶内分流相互独立
+</pre>
+
+<h3>9.5 版本对照的统计检验要点</h3>
+
+<table>
+  <tr><th>事项</th><th>说明</th></tr>
+  <tr><td>样本量估算</td><td>版本对照效应量通常比单桶浓度差异更微弱，需基于历史数据估算所需样本量和观察周期，不能凭经验设定</td></tr>
+  <tr><td>混杂因素控制</td><td>同一时间窗口并行跑两个版本，优于纯前后时序对比，因前者控制了季节性/媒体规则变化等时间维度混杂</td></tr>
+  <tr><td>观察周期</td><td>至少覆盖一个完整业务周期（工作日+周末），避免短期波动误判，建议≥7天</td></tr>
+  <tr><td>pLTV升级场景</td><td>分层口径本身已变化，5月/6月的"1号桶"可能代表不同客群；优先用整体指标对比，不可逐桶直接类比</td></tr>
+</table>
+
+<h3>9.6 补充手段：前后对比（仅作辅助）</h3>
+
+<p>若业务无法接受切出独立对照流量，可退而求其次用前后时间序列对比，但需明确：无法排除时间窗口内的媒体流量结构变化、季节性因素干扰，只能得出"方向性参考"，<strong>不建议作为版本是否推全的最终依据</strong>。</p>
+
+<!-- =========================================
+     Part IV · 决策与风险
+     ========================================= -->
+
+<h2 id="s10">十、两层验证的衔接与决策流程</h2>
+
+<pre>
+┌────────────────────────────────────────────────────────────┐
+│ 阶段0：起点校验（新策略版本上线前）                            │
+│   验证10桶在曝光前的潜在客群分布是否均匀                       │
+│   通过：χ²检验 p>0.05，各层浓度偏差 &lt;3%                      │
+└──────────────────────────┬─────────────────────────────────┘
+                            ↓ 通过
+┌────────────────────────────────────────────────────────────┐
+│ 阶段1：版本整体对照（层面二）                                  │
+│   新版本切10%~20%独立对照流量，与主流量（旧版本）并行跑          │
+│   比较整体ROI / 整体出价准度偏差率                             │
+│   判断：新版本是否整体显著优于旧版本？                          │
+└──────────────────────────┬─────────────────────────────────┘
+                            ↓ 整体显著更优
+┌────────────────────────────────────────────────────────────┐
+│ 阶段2：桶内出价梯度校验（层面一）                              │
+│   在新版本内部，对10档出价梯度做b浓度赛马                       │
+│   校验响应曲线单调性、边际递减、拐点位置                         │
+│   找到性价比最优区间，用于调权放量参考                           │
+└──────────────────────────┬─────────────────────────────────┘
+                            ↓
+┌────────────────────────────────────────────────────────────┐
+│ 阶段3：分阶段放量推全                                          │
+│   对照流量比例逐步提升：20% → 50% → 100%                      │
+│   持续监控整体指标是否随流量增长衰减                             │
+│   推全后保留小比例旧版本作为常驻哨兵                             │
+└────────────────────────────────────────────────────────────┘
+</pre>
+
+<div class="callout cb-blue">
+  <strong>关键原则：先做层面二（版本整体是否更优），再做层面一（版本内部怎么调权）。</strong>如果新版本整体都不如旧版本，那么在新版本内部做再精细的桶内赛马也没有意义；反过来，桶内赛马调出的"性价比最优区间"，其参考价值也建立在"这一整版策略本身是有效的"这个前提之上。
+</div>
+
+<!-- ===== -->
+
+<h2 id="s11">十一、风险提示与待对齐事项</h2>
+
+<h3>11.1 主要风险</h3>
+
+<table>
+  <tr><th>风险项</th><th>描述</th><th>应对</th></tr>
+  <tr>
+    <td>对照流量探索成本</td>
+    <td>独立分流做版本对照，对照流量在观察期内使用"待验证"策略，可能短期效果不如主流量</td>
+    <td>业务方需接受一定探索成本；流量占比越小影响越小，但周期越长</td>
+  </tr>
+  <tr>
+    <td>样本量 vs 观察周期权衡</td>
+    <td>对照流量占比与所需观察周期是一对权衡，不能凭经验设定</td>
+    <td>基于历史方差提前做样本量估算，再确定流量占比和观察窗口</td>
+  </tr>
+  <tr>
+    <td>pLTV分层口径变化</td>
+    <td>算法升级后，5月/6月同号桶可能代表不同客群，逐桶类比失效</td>
+    <td>优先用整体指标（整体ROI）对比；报告中注明"分层口径已变化，不可逐桶直接类比"</td>
+  </tr>
+  <tr>
+    <td>userid覆盖缺口</td>
+    <td>匿名用户（仅有deviceid）无法纳入主实验，降低整体覆盖率</td>
+    <td>持续优化ID Mapping服务，提升userid匹配率；匿名用户单独建副实验群体</td>
+  </tr>
+</table>
+
+<h3>11.2 待与算法/数据团队对齐事项</h3>
+
+<ol>
+  <li>版本对照所需的独立流量切分能力——媒体接口/RTA网关侧是否已支持在10桶之外再加一层版本分流标识，还是需要工程改造。</li>
+  <li>整体ROI、整体出价准度偏差率等版本对照指标的计算口径，需与现有桶内b浓度指标统一标准，避免两层验证用不可比的指标定义。</li>
+  <li>版本对照所需样本量/观察周期估算，需基于历史数据先做一轮基线方差测算。</li>
+  <li>pLTV算法升级后，是否需要在升级窗口期保留双轨打分（新旧算法并行），以便版本对照期间有可比的分层基准。</li>
+  <li>ID Mapping服务的实时性与覆盖率 SLA 确认，确保主实验人群的userid匹配率满足样本量需求。</li>
+</ol>
+
+</main>
+</div>
+</body>
+</html>

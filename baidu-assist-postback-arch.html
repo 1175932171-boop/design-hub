@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>百度·全渠道助攻回传架构图</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  background: #f0f4f8;
+  color: #1e293b;
+  min-height: 100vh;
+  padding: 0 0 60px;
+}
+
+/* ===== Header ===== */
+.hd {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #312e81 100%);
+  padding: 28px 48px 24px;
+  display: flex; align-items: center; gap: 16px;
+}
+.hd-logo { font-size: 36px; }
+.hd h1 { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: .04em; }
+.hd p { color: rgba(255,255,255,.5); font-size: 12px; margin-top: 3px; }
+
+/* ===== Page wrap ===== */
+.wrap { max-width: 1300px; margin: 0 auto; padding: 36px 32px 0; }
+
+.section-label {
+  font-size: 11px; font-weight: 800; color: #94a3b8;
+  letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 16px; margin-top: 40px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after {
+  content: ''; flex: 1; height: 1px; background: #e2e8f0;
+}
+
+/* ===== Main Arch Diagram ===== */
+.arch-diagram {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 36px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  overflow-x: auto;
+}
+
+.arch-title {
+  font-size: 15px; font-weight: 800; color: #1e293b;
+  margin-bottom: 28px; text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+/* ===== Two-side layout ===== */
+.two-side {
+  display: grid;
+  grid-template-columns: 1fr 80px 1fr;
+  gap: 0;
+  min-width: 900px;
+}
+
+/* Side panels */
+.side-panel {
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+}
+.side-panel.advertiser {
+  background: linear-gradient(160deg, #eff6ff, #dbeafe 80%);
+  border: 1.5px solid #93c5fd;
+}
+.side-panel.media {
+  background: linear-gradient(160deg, #faf5ff, #ede9fe 80%);
+  border: 1.5px solid #c4b5fd;
+}
+
+.side-title {
+  font-size: 13px; font-weight: 800; letter-spacing: .06em;
+  padding: 6px 14px; border-radius: 20px; display: inline-flex;
+  align-items: center; gap: 6px; margin-bottom: 16px;
+}
+.advertiser .side-title { background: #1d4ed8; color: #fff; }
+.media .side-title { background: #7c3aed; color: #fff; }
+
+/* Center arrow column */
+.center-col {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 0 4px;
+}
+
+/* ===== Flow boxes ===== */
+.flow-row {
+  display: flex; align-items: stretch; gap: 8px;
+  margin-bottom: 10px;
+}
+
+.flow-box {
+  flex: 1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  position: relative;
+}
+.flow-box .fb-title {
+  font-weight: 700; font-size: 12px; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 5px;
+}
+.flow-box .fb-desc {
+  font-size: 11px; color: #64748b; line-height: 1.5;
+}
+
+/* Box themes */
+.fb-blue { background: #dbeafe; border: 1px solid #93c5fd; }
+.fb-blue .fb-title { color: #1e40af; }
+.fb-orange { background: #fff7ed; border: 1px solid #fed7aa; }
+.fb-orange .fb-title { color: #c2410c; }
+.fb-green { background: #dcfce7; border: 1px solid #86efac; }
+.fb-green .fb-title { color: #166534; }
+.fb-purple { background: #ede9fe; border: 1px solid #c4b5fd; }
+.fb-purple .fb-title { color: #6d28d9; }
+.fb-yellow { background: #fefce8; border: 1px solid #fde047; }
+.fb-yellow .fb-title { color: #92400e; }
+.fb-red { background: #fef2f2; border: 1px solid #fca5a5; }
+.fb-red .fb-title { color: #991b1b; }
+.fb-teal { background: #ccfbf1; border: 1px solid #5eead4; }
+.fb-teal .fb-title { color: #134e4a; }
+
+/* ===== Divider with label ===== */
+.divider-row {
+  display: flex; align-items: center; gap: 8px;
+  margin: 14px 0;
+}
+.divider-row .d-line { flex: 1; height: 1.5px; background: #e2e8f0; }
+.divider-row .d-tag {
+  font-size: 10px; font-weight: 700; color: #64748b;
+  background: #f1f5f9; padding: 2px 8px; border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ===== Arrow between sides ===== */
+.data-arrow {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  padding: 8px 0;
+}
+.da-label {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 10px;
+  white-space: nowrap; text-align: center;
+}
+.da-blue { background: #dbeafe; color: #1e40af; }
+.da-purple { background: #ede9fe; color: #6d28d9; }
+.da-green { background: #dcfce7; color: #166534; }
+.da-orange { background: #fff7ed; color: #c2410c; }
+
+.arrow-svg { width: 28px; height: 28px; }
+
+/* ===== Section: Model detail ===== */
+.model-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 36px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  margin-top: 24px;
+}
+
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.model-card {
+  border-radius: 10px;
+  padding: 16px;
+  border: 1.5px solid transparent;
+}
+.mc-blue { background: #eff6ff; border-color: #93c5fd; }
+.mc-purple { background: #faf5ff; border-color: #c4b5fd; }
+.mc-green { background: #f0fdf4; border-color: #86efac; }
+.mc-orange { background: #fff7ed; border-color: #fed7aa; }
+.mc-yellow { background: #fefce8; border-color: #fde047; }
+.mc-teal { background: #f0fdfa; border-color: #5eead4; }
+
+.mc-icon { font-size: 24px; margin-bottom: 8px; }
+.mc-title { font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
+.mc-body { font-size: 11px; color: #475569; line-height: 1.7; }
+.mc-body b { color: #1e293b; }
+.mc-tag {
+  display: inline-block; margin-top: 8px;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 8px;
+}
+.tag-blue { background: #dbeafe; color: #1e40af; }
+.tag-purple { background: #ede9fe; color: #6d28d9; }
+.tag-green { background: #dcfce7; color: #166534; }
+.tag-orange { background: #fff7ed; color: #c2410c; }
+
+/* ===== Section: Volume improvement ===== */
+.volume-section {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a 55%, #312e81);
+  border-radius: 16px;
+  padding: 28px 36px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.12);
+  margin-top: 24px;
+  color: #fff;
+}
+
+.volume-section .section-label { color: rgba(255,255,255,.5); }
+.volume-section .section-label::after { background: rgba(255,255,255,.15); }
+
+.volume-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.vc {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+.vc-icon { font-size: 28px; margin-bottom: 8px; }
+.vc-title { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+.vc-body { font-size: 11px; color: rgba(255,255,255,.6); line-height: 1.6; }
+.vc-metric {
+  margin-top: 10px; font-size: 20px; font-weight: 900;
+  color: #fbbf24; letter-spacing: .02em;
+}
+.vc-metric-label { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+/* ===== Full flow timeline ===== */
+.timeline-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 36px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  margin-top: 24px;
+}
+
+.timeline {
+  display: flex; align-items: flex-start;
+  gap: 0; overflow-x: auto;
+  padding-bottom: 8px;
+  margin-top: 16px;
+}
+
+.tl-step {
+  flex: 1; min-width: 130px;
+  display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+.tl-step:not(:last-child)::after {
+  content: '';
+  position: absolute; top: 20px; left: 60%;
+  width: calc(80% - 20px); height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+.tl-dot {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; z-index: 1; position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.tl-content { text-align: center; margin-top: 10px; padding: 0 4px; }
+.tl-title { font-size: 11px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+.tl-desc { font-size: 10px; color: #64748b; line-height: 1.5; }
+
+/* ===== Legend ===== */
+.legend {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-top: 16px; padding: 14px 18px;
+  background: #f8fafc; border-radius: 8px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: #475569;
+}
+.legend-dot {
+  width: 10px; height: 10px; border-radius: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hd">
+  <div class="hd-logo">🔗</div>
+  <div>
+    <h1>百度·全渠道助攻回传 · 架构全景图</h1>
+    <p>广告主 × 百度媒体 · 数据流转 · 建模机制 · 跑量提升路径</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== Section 1: 全链路架构图 ===== -->
+  <div class="section-label">全链路架构图</div>
+
+  <div class="arch-diagram">
+    <div class="arch-title">
+      🏗️ 广告主 &amp; 百度媒体 · 助攻回传全链路架构
+    </div>
+
+    <div class="two-side">
+
+      <!-- 广告主侧 -->
+      <div class="side-panel advertiser">
+        <div class="side-title">🏢 广告主侧</div>
+
+        <!-- 流量入口 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">① 流量触点 · 百度渠道</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-blue">
+            <div class="fb-title">📺 曝光</div>
+            <div class="fb-desc">用户在百度信息流/搜索看到广告展示</div>
+          </div>
+          <div style="display:flex;align-items:center;color:#94a3b8;font-size:18px;">→</div>
+          <div class="flow-box fb-blue">
+            <div class="fb-title">🖱️ 点击</div>
+            <div class="fb-desc">用户点击百度广告跳转落地页或AppStore</div>
+          </div>
+        </div>
+
+        <!-- 流失节点 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">② 用户流失节点（助攻来源）</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-orange" style="flex:1;">
+            <div class="fb-title">💨 展示后流失</div>
+            <div class="fb-desc">看到但未点击，后续在他渠道转化</div>
+          </div>
+          <div class="flow-box fb-orange" style="flex:1;">
+            <div class="fb-title">💨 点击后流失</div>
+            <div class="fb-desc">点击未落地，后续在他渠道转化</div>
+          </div>
+          <div class="flow-box fb-orange" style="flex:1;">
+            <div class="fb-title">💨 落地页流失</div>
+            <div class="fb-desc">进入落地页未转化，他渠道完成</div>
+          </div>
+        </div>
+
+        <!-- 其他渠道转化 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">③ 其他渠道完成转化</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-green" style="flex:1;">
+            <div class="fb-title">📱 抖音成单</div>
+            <div class="fb-desc">归因抖音，消耗计抖音</div>
+          </div>
+          <div class="flow-box fb-green" style="flex:1;">
+            <div class="fb-title">📱 快手成单</div>
+            <div class="fb-desc">归因快手，消耗计快手</div>
+          </div>
+          <div class="flow-box fb-green" style="flex:1;">
+            <div class="fb-title">📱 腾讯成单</div>
+            <div class="fb-desc">归因腾讯，消耗计腾讯</div>
+          </div>
+        </div>
+
+        <!-- 数据准备 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">④ 广告主数据处理</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-yellow" style="flex:2;">
+            <div class="fb-title">🔍 助攻样本筛选</div>
+            <div class="fb-desc">
+              条件A：用户在百度有曝光/点击/落地行为<br>
+              条件B：最终在其他渠道完成转化并归因<br>
+              时间范围：最近 1~3 个月<br>
+              数量要求：≥ 100万条
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;padding:0 4px;color:#94a3b8;">→</div>
+          <div class="flow-box fb-yellow" style="flex:2;">
+            <div class="fb-title">🔐 数据加密处理</div>
+            <div class="fb-desc">
+              字段：id / idType / time<br>
+              加密：IDFA、OAID、IMEI、CAID 的 MD5<br>
+              手机号 MD5<br>
+              禁止明文传输
+            </div>
+          </div>
+        </div>
+
+        <!-- 准入门槛 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">⑤ 准入资质</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-red" style="flex:1;">
+            <div class="fb-title">💰 消耗门槛</div>
+            <div class="fb-desc">百青藤日均消耗 ≥ 10万元；他渠道消耗 ≥ 百度消耗</div>
+          </div>
+          <div class="flow-box fb-red" style="flex:1;">
+            <div class="fb-title">📦 样本门槛</div>
+            <div class="fb-desc">离线外部转化样本 ≥ 100万条</div>
+          </div>
+          <div class="flow-box fb-red" style="flex:1;">
+            <div class="fb-title">📡 平台要求</div>
+            <div class="fb-desc">支持 Android / iOS / 鸿蒙，百青藤分开回传</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中间数据传输列 -->
+      <div class="center-col">
+        <div style="font-size:10px;font-weight:800;color:#64748b;text-align:center;writing-mode:horizontal-tb;margin-bottom:4px;">数据传输</div>
+
+        <!-- Arrow: 样本上传 -->
+        <div class="data-arrow">
+          <div class="da-label da-blue">API回传（默认）</div>
+          <svg class="arrow-svg" viewBox="0 0 28 28" fill="none">
+            <path d="M14 4 L14 22 M6 16 L14 24 L22 16" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="da-label da-blue">离线批量上传</div>
+        </div>
+
+        <div style="height:12px;border-left:2px dashed #cbd5e1;"></div>
+
+        <!-- Arrow: 观星盘 -->
+        <div class="data-arrow">
+          <div class="da-label da-purple" style="padding:4px 10px;font-size:11px;">⭐ 观星盘</div>
+          <svg class="arrow-svg" viewBox="0 0 28 28" fill="none">
+            <path d="M14 4 L14 22 M6 16 L14 24 L22 16" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <div style="height:12px;border-left:2px dashed #cbd5e1;"></div>
+
+        <!-- Arrow: 效果反馈 -->
+        <div class="data-arrow">
+          <svg class="arrow-svg" viewBox="0 0 28 28" fill="none">
+            <path d="M14 24 L14 6 M6 12 L14 4 L22 12" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="da-label da-green">效果回馈</div>
+          <div class="da-label da-green" style="font-size:9px;">跑量↑ 成本↓</div>
+        </div>
+      </div>
+
+      <!-- 百度媒体侧 -->
+      <div class="side-panel media">
+        <div class="side-title">🟣 百度媒体侧</div>
+
+        <!-- 数据接收 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">A. 观星盘接收 &amp; 存储</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-purple" style="flex:1;">
+            <div class="fb-title">⭐ 观星盘 DMP</div>
+            <div class="fb-desc">
+              接收广告主上传的助攻样本<br>
+              支持 API 实时接入 &amp; 离线文件导入<br>
+              数据校验、去重、格式标准化
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;padding:0 4px;color:#94a3b8;">→</div>
+          <div class="flow-box fb-purple" style="flex:1;">
+            <div class="fb-title">📋 样本质量校验</div>
+            <div class="fb-desc">
+              ID 格式合规性校验<br>
+              时间戳有效性校验<br>
+              百度行为关联性核查<br>
+              噪声过滤
+            </div>
+          </div>
+        </div>
+
+        <!-- 建模 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">B. 助攻模型建模（核心）</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-teal" style="flex:2;">
+            <div class="fb-title">🧠 助攻模型训练</div>
+            <div class="fb-desc">
+              <b>输入</b>：助攻样本（他渠道转化用户）<br>
+              <b>标注</b>：不归因给百度，仅作正样本<br>
+              <b>目的</b>：扩充对目标用户群的认知<br>
+              <b>隔离</b>：百度 / 青藤 分开建模
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;padding:0 4px;color:#94a3b8;">+</div>
+          <div class="flow-box fb-teal" style="flex:2;">
+            <div class="fb-title">🔄 与正常转化模型融合</div>
+            <div class="fb-desc">
+              正常转化模型（广告监测追踪回传）<br>
+              + 助攻模型补充样本<br>
+              → 联合优化 oCPX 出价策略<br>
+              → 增强用户价值识别能力
+            </div>
+          </div>
+        </div>
+
+        <!-- 出价决策 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">C. oCPX 出价决策优化</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-blue" style="flex:1;">
+            <div class="fb-title">🎯 用户价值评估</div>
+            <div class="fb-desc">融合助攻样本后，对潜在转化用户预估更准确</div>
+          </div>
+          <div style="display:flex;align-items:center;padding:0 4px;color:#94a3b8;">→</div>
+          <div class="flow-box fb-blue" style="flex:1;">
+            <div class="fb-title">💡 动态出价</div>
+            <div class="fb-desc">对高价值用户提高出价，竞得更多优质曝光</div>
+          </div>
+        </div>
+
+        <!-- 投放效果 -->
+        <div class="divider-row"><div class="d-line"></div><div class="d-tag">D. 投放效果提升</div><div class="d-line"></div></div>
+        <div class="flow-row">
+          <div class="flow-box fb-green" style="flex:1;">
+            <div class="fb-title">⚡ 冷启动加速</div>
+            <div class="fb-desc">跳过样本积累期，模型快速收敛</div>
+          </div>
+          <div class="flow-box fb-green" style="flex:1;">
+            <div class="fb-title">📈 跑量提升</div>
+            <div class="fb-desc">识别范围扩大，竞价成功率提升</div>
+          </div>
+          <div class="flow-box fb-green" style="flex:1;">
+            <div class="fb-title">📉 波动下降</div>
+            <div class="fb-desc">样本充足，CPA 成本更稳定</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end two-side -->
+
+    <!-- Legend -->
+    <div class="legend" style="margin-top:20px;">
+      <div class="legend-item"><div class="legend-dot" style="background:#dbeafe;border:1px solid #93c5fd;"></div>百度渠道行为</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fff7ed;border:1px solid #fed7aa;"></div>用户流失节点（助攻来源）</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border:1px solid #86efac;"></div>其他渠道转化</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fefce8;border:1px solid #fde047;"></div>广告主数据处理</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border:1px solid #c4b5fd;"></div>百度媒体处理</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ccfbf1;border:1px solid #5eead4;"></div>建模 &amp; 跑量提升</div>
+    </div>
+
+  </div><!-- end arch-diagram -->
+
+
+  <!-- ===== Section 2: 建模机制详解 ===== -->
+  <div class="section-label" style="margin-top:40px;">助攻模型建模机制详解</div>
+  <div class="model-section">
+    <div class="arch-title">🧠 百度助攻模型 · 三层建模机制</div>
+    <div class="model-grid">
+
+      <div class="model-card mc-blue">
+        <div class="mc-icon">📥</div>
+        <div class="mc-title">样本接收层</div>
+        <div class="mc-body">
+          通过<b>观星盘 DMP</b> 接收广告主上传的他渠道转化用户设备 ID<br><br>
+          支持格式：IDFA / OAID / IMEI / CAID / 手机号（MD5加密）<br><br>
+          最低门槛：<b>100万条</b>，建议 1~3 个月滚动更新
+        </div>
+        <div class="mc-tag tag-blue">数据入口</div>
+      </div>
+
+      <div class="model-card mc-purple">
+        <div class="mc-icon">🔗</div>
+        <div class="mc-title">行为关联层</div>
+        <div class="mc-body">
+          将上传的转化用户 ID 与<b>百度历史行为日志</b>进行 join<br><br>
+          确认该用户在百度有过：曝光 / 点击 / 落地 / 跳转 AppStore<br><br>
+          确保助攻样本的"百度触达"有效性，过滤无关噪声
+        </div>
+        <div class="mc-tag tag-purple">行为验证</div>
+      </div>
+
+      <div class="model-card mc-teal" style="background:#f0fdfa;border-color:#5eead4;">
+        <div class="mc-icon">🏷️</div>
+        <div class="mc-title">正样本标注层</div>
+        <div class="mc-body">
+          助攻转化用户被标注为<b>正样本</b>（潜在高价值用户）<br><br>
+          <b>不改变归因结果</b>，不影响媒体结算<br><br>
+          独立于正常转化样本，作为补充训练数据
+        </div>
+        <div class="mc-tag tag-green">正样本</div>
+      </div>
+
+      <div class="model-card mc-orange">
+        <div class="mc-icon">🔀</div>
+        <div class="mc-title">双模型融合</div>
+        <div class="mc-body">
+          <b>转化模型</b>：来自百度渠道真实转化，高置信度<br><br>
+          <b>助攻模型</b>：来自他渠道转化补充，扩大样本覆盖<br><br>
+          两者融合后形成更完整的<b>用户价值图谱</b>
+        </div>
+        <div class="mc-tag tag-orange">模型融合</div>
+      </div>
+
+      <div class="model-card mc-green">
+        <div class="mc-icon">📊</div>
+        <div class="mc-title">百青藤分离建模</div>
+        <div class="mc-body">
+          <b>百度信息流</b>与<b>青藤联盟</b>用户特征差异大<br><br>
+          分别建立独立模型，避免样本混用降低精度<br><br>
+          回传时需明确标识数据归属，分渠道独立优化
+        </div>
+        <div class="mc-tag tag-green">渠道隔离</div>
+      </div>
+
+      <div class="model-card mc-yellow">
+        <div class="mc-icon">🔄</div>
+        <div class="mc-title">持续迭代更新</div>
+        <div class="mc-body">
+          建议广告主<b>常态化回传</b>（API 实时接入）<br><br>
+          模型随新样本持续更新，避免数据老化<br><br>
+          超过 3 个月的历史数据参考价值下降，优先回传近期
+        </div>
+        <div class="mc-tag" style="background:#fefce8;color:#92400e;">持续学习</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ===== Section 3: 跑量提升路径 ===== -->
+  <div class="section-label" style="margin-top:36px;">助攻回传如何提升跑量能力</div>
+
+  <div class="volume-section">
+    <div class="arch-title" style="color:#fff;">📈 四大机制 · 跑量能力全面提升</div>
+    <div class="volume-grid">
+
+      <div class="vc">
+        <div class="vc-icon">🧊→🔥</div>
+        <div class="vc-title">冷启动加速</div>
+        <div class="vc-body">
+          通过注入外部样本，跳过依赖百度渠道自然积累的等待期<br><br>
+          新计划上线即可具备初步用户价值识别能力
+        </div>
+        <div class="vc-metric">-60%</div>
+        <div class="vc-metric-label">预计冷启周期缩短</div>
+      </div>
+
+      <div class="vc">
+        <div class="vc-icon">🎯</div>
+        <div class="vc-title">用户识别精度提升</div>
+        <div class="vc-body">
+          助攻样本扩充正样本空间，模型对目标转化用户的画像更完整<br><br>
+          有效降低漏判高价值用户的概率
+        </div>
+        <div class="vc-metric">+样本覆盖</div>
+        <div class="vc-metric-label">多渠道用户特征融合</div>
+      </div>
+
+      <div class="vc">
+        <div class="vc-icon">📉</div>
+        <div class="vc-title">出价稳定性提升</div>
+        <div class="vc-body">
+          样本充足后，oCPX 出价模型收敛更快，CPA 波动大幅下降<br><br>
+          减少因样本稀疏导致的过高/过低出价异常
+        </div>
+        <div class="vc-metric">↓ CPA波动</div>
+        <div class="vc-metric-label">投放成本更稳定</div>
+      </div>
+
+      <div class="vc">
+        <div class="vc-icon">🚀</div>
+        <div class="vc-title">竞价能力提升</div>
+        <div class="vc-body">
+          对高价值用户能精准提高出价，提升竞价胜率<br><br>
+          在不提升整体预算的前提下，获得更多优质流量
+        </div>
+        <div class="vc-metric">↑ 跑量</div>
+        <div class="vc-metric-label">竞价成功率显著提升</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ===== Section 4: 全流程时序 ===== -->
+  <div class="section-label" style="margin-top:36px;">全流程时序</div>
+  <div class="timeline-section">
+    <div class="arch-title">⏱️ 广告主接入 · 完整操作时序</div>
+    <div class="timeline">
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#dbeafe;color:#1e40af;">✅</div>
+        <div class="tl-content">
+          <div class="tl-title">确认准入资质</div>
+          <div class="tl-desc">日耗≥10万<br>他渠道≥百度<br>样本≥100万</div>
+        </div>
+      </div>
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#e0e7ff;color:#4338ca;">⭐</div>
+        <div class="tl-content">
+          <div class="tl-title">开通观星盘</div>
+          <div class="tl-desc">配置 API<br>接入权限<br>账户授权</div>
+        </div>
+      </div>
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#fff7ed;color:#c2410c;">🔍</div>
+        <div class="tl-content">
+          <div class="tl-title">筛选助攻样本</div>
+          <div class="tl-desc">近1-3个月<br>有百度行为<br>他渠道转化</div>
+        </div>
+      </div>
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#fefce8;color:#92400e;">🔐</div>
+        <div class="tl-content">
+          <div class="tl-title">数据加密处理</div>
+          <div class="tl-desc">ID/MD5加密<br>格式校验<br>组装字段</div>
+        </div>
+      </div>
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#dcfce7;color:#166534;">📡</div>
+        <div class="tl-content">
+          <div class="tl-title">分渠道回传</div>
+          <div class="tl-desc">百度/青藤<br>分开上传<br>API或离线</div>
+        </div>
+      </div>
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#ccfbf1;color:#134e4a;">🧠</div>
+        <div class="tl-content">
+          <div class="tl-title">百度建模</div>
+          <div class="tl-desc">样本入库<br>关联验证<br>模型更新</div>
+        </div>
+      </div>
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#faf5ff;color:#7c3aed;">🚀</div>
+        <div class="tl-content">
+          <div class="tl-title">跑量效果提升</div>
+          <div class="tl-desc">冷启加速<br>CPA稳定<br>跑量↑</div>
+        </div>
+      </div>
+
+      <div class="tl-step">
+        <div class="tl-dot" style="background:#fef2f2;color:#991b1b;">🔄</div>
+        <div class="tl-content">
+          <div class="tl-title">持续迭代回传</div>
+          <div class="tl-desc">常态化API<br>样本滚动更新<br>效果持续优化</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ===== Section 5: 核心约束 ===== -->
+  <div class="section-label" style="margin-top:36px;">核心约束 &amp; 注意事项</div>
+  <div class="model-section">
+    <div class="model-grid" style="grid-template-columns:repeat(3,1fr);">
+
+      <div class="model-card mc-blue">
+        <div class="mc-icon">⚖️</div>
+        <div class="mc-title">归因不变原则</div>
+        <div class="mc-body">
+          助攻样本<b>不改变任何渠道的归因结果</b><br><br>
+          转化费用仍归属原渠道（抖音/快手等）<br><br>
+          百度仅使用数据训练模型，不参与结算计费
+        </div>
+      </div>
+
+      <div class="model-card mc-purple">
+        <div class="mc-icon">🔒</div>
+        <div class="mc-title">隐私合规要求</div>
+        <div class="mc-body">
+          所有 ID 数据<b>必须加密传输</b>（MD5等），禁止明文<br><br>
+          遵循个人信息保护法（PIPL）相关要求<br><br>
+          手机号必须经 MD5 后再上传，不可还原
+        </div>
+      </div>
+
+      <div class="model-card mc-orange">
+        <div class="mc-icon">🎯</div>
+        <div class="mc-title">样本纯净度</div>
+        <div class="mc-body">
+          仅回传<b>有百度行为记录</b>的转化用户<br><br>
+          无百度行为的纯他渠道用户回传无效，会引入噪声<br><br>
+          建议回传前与百度 Cookie 做预匹配验证
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end wrap -->
+
+<div style="height:48px;"></div>
+
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTA 三类流量分级处理策略</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  background: #f0f4f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px 48px;
+  min-height: 100vh;
+}
+h1 { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+.chart-wrap {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  padding: 32px 28px 28px;
+  overflow-x: auto;
+}
+svg { display: block; }
+</style>
+</head>
+<body>
+
+<h1>RTA 三类流量分级处理策略</h1>
+<p class="sub">优先级1：userid分桶 &nbsp;·&nbsp; 优先级2：deviceid分桶 &nbsp;·&nbsp; 优先级3：无ID兜底</p>
+
+<div class="chart-wrap">
+<svg width="1020" height="620" viewBox="0 0 1020 620" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Arrow marker - dark -->
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#475569"/>
+    </marker>
+    <!-- Arrow marker - blue -->
+    <marker id="arr-b" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#0ea5e9"/>
+    </marker>
+    <!-- Arrow marker - amber -->
+    <marker id="arr-a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#f59e0b"/>
+    </marker>
+    <!-- Arrow marker - gray -->
+    <marker id="arr-g" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000015"/>
+    </filter>
+  </defs>
+
+  <!-- ===== START NODE ===== -->
+  <rect x="100" y="18" width="300" height="52" rx="26" fill="#0f172a" filter="url(#shadow)"/>
+  <text x="250" y="40" text-anchor="middle" fill="white" font-size="13" font-weight="700">RTA 请求到达</text>
+  <text x="250" y="58" text-anchor="middle" fill="#94a3b8" font-size="11">携带 RTAID · deviceid · 媒体桶号</text>
+
+  <!-- Start → Decision 1 -->
+  <line x1="250" y1="70" x2="250" y2="106" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ===== DECISION 1 ===== -->
+  <polygon points="250,108 358,158 250,208 142,158" fill="#eff6ff" stroke="#0ea5e9" stroke-width="2" filter="url(#shadow)"/>
+  <text x="250" y="147" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="700">优先级 1</text>
+  <text x="250" y="163" text-anchor="middle" fill="#0369a1" font-size="11">userid 是否可获取？</text>
+  <text x="250" y="178" text-anchor="middle" fill="#64748b" font-size="10">ID Mapping命中 OR 登录态</text>
+
+  <!-- YES label -->
+  <text x="372" y="148" fill="#0ea5e9" font-size="12" font-weight="700">是</text>
+  <!-- Decision1 YES arrow right -->
+  <line x1="358" y1="158" x2="448" y2="158" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arr-b)"/>
+
+  <!-- Process: userid分桶 -->
+  <rect x="448" y="131" width="118" height="54" rx="8" fill="white" stroke="#0ea5e9" stroke-width="2" filter="url(#shadow)"/>
+  <text x="507" y="152" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="700">userid 分桶</text>
+  <text x="507" y="170" text-anchor="middle" fill="#64748b" font-size="10.5">MurmurHash3 取模</text>
+
+  <!-- userid分桶 → 主实验人群 -->
+  <line x1="566" y1="158" x2="608" y2="158" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arr-b)"/>
+
+  <!-- 主实验人群 Result Box -->
+  <rect x="608" y="110" width="382" height="96" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="608" y="110" width="382" height="30" rx="10" fill="#3b82f6"/>
+  <rect x="608" y="128" width="382" height="12" rx="0" fill="#3b82f6"/>
+  <text x="799" y="130" text-anchor="middle" fill="white" font-size="12" font-weight="700">主实验人群</text>
+  <text x="625" y="160" fill="#1d4ed8" font-size="11.5" font-weight="600">· 用户级归因，跨平台汇总</text>
+  <text x="625" y="177" fill="#1d4ed8" font-size="11.5" font-weight="600">· 所有媒体平台共享同一 userid 分桶规则</text>
+  <text x="625" y="194" fill="#64748b" font-size="11">· 分层浓度初始一致性由分层哈希保障</text>
+
+  <!-- NO label D1 -->
+  <text x="258" y="222" fill="#64748b" font-size="12" font-weight="700">否</text>
+  <!-- Decision1 NO arrow down -->
+  <line x1="250" y1="208" x2="250" y2="256" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ===== DECISION 2 ===== -->
+  <polygon points="250,258 358,308 250,358 142,308" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="250" y="297" text-anchor="middle" fill="#92400e" font-size="12" font-weight="700">优先级 2</text>
+  <text x="250" y="313" text-anchor="middle" fill="#92400e" font-size="11">deviceid 是否有效？</text>
+  <text x="250" y="328" text-anchor="middle" fill="#64748b" font-size="10">存在且非全零</text>
+
+  <!-- YES label D2 -->
+  <text x="372" y="298" fill="#f59e0b" font-size="12" font-weight="700">是</text>
+  <!-- Decision2 YES arrow right -->
+  <line x1="358" y1="308" x2="448" y2="308" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr-a)"/>
+
+  <!-- Process: deviceid分桶 -->
+  <rect x="448" y="281" width="118" height="54" rx="8" fill="white" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="507" y="302" text-anchor="middle" fill="#92400e" font-size="12" font-weight="700">deviceid 分桶</text>
+  <text x="507" y="320" text-anchor="middle" fill="#64748b" font-size="10.5">Hash 取模（设备级）</text>
+
+  <!-- deviceid分桶 → 副实验人群 -->
+  <line x1="566" y1="308" x2="608" y2="308" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr-a)"/>
+
+  <!-- 副实验人群 Result Box -->
+  <rect x="608" y="260" width="382" height="96" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="608" y="260" width="382" height="30" rx="10" fill="#f59e0b"/>
+  <rect x="608" y="278" width="382" height="12" rx="0" fill="#f59e0b"/>
+  <text x="799" y="280" text-anchor="middle" fill="white" font-size="12" font-weight="700">副实验人群</text>
+  <text x="625" y="310" fill="#92400e" font-size="11.5" font-weight="600">· 设备级归因，独立分析</text>
+  <text x="625" y="327" fill="#92400e" font-size="11.5" font-weight="600">· 不与 userid 主实验人群混合计算</text>
+  <text x="625" y="344" fill="#64748b" font-size="11">· 仅保证设备数量均匀，不做分层浓度要求</text>
+
+  <!-- NO label D2 -->
+  <text x="258" y="372" fill="#64748b" font-size="12" font-weight="700">否</text>
+  <!-- Decision2 NO arrow down -->
+  <line x1="250" y1="358" x2="250" y2="406" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ===== PRIORITY 3 PROCESS BOX ===== -->
+  <rect x="120" y="406" width="260" height="52" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" filter="url(#shadow)"/>
+  <text x="250" y="427" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">优先级 3：无任何 ID</text>
+  <text x="250" y="446" text-anchor="middle" fill="#64748b" font-size="11">完全匿名设备（IDFA全零等）</text>
+
+  <!-- P3 → 底价策略 -->
+  <line x1="250" y1="458" x2="250" y2="496" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr-g)"/>
+
+  <!-- 兜底策略 process -->
+  <rect x="120" y="496" width="260" height="52" rx="10" fill="white" stroke="#94a3b8" stroke-width="2" filter="url(#shadow)"/>
+  <text x="250" y="517" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">低系数 vs 标准出价赛马</text>
+  <text x="250" y="535" text-anchor="middle" fill="#64748b" font-size="10.5">验证匿名流量出价效率差异</text>
+
+  <!-- 底价策略 → 不纳入实验 -->
+  <line x1="380" y1="522" x2="430" y2="522" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr-g)"/>
+
+  <!-- 不纳入实验 Result Box -->
+  <rect x="430" y="476" width="560" height="92" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="430" y="476" width="560" height="30" rx="10" fill="#64748b"/>
+  <rect x="430" y="494" width="560" height="12" rx="0" fill="#64748b"/>
+  <text x="710" y="496" text-anchor="middle" fill="white" font-size="12" font-weight="700">不纳入主实验，计入覆盖率分母</text>
+  <text x="447" y="527" fill="#475569" font-size="11.5" font-weight="600">· 不参与 A/B 实验分析，避免污染主实验结论</text>
+  <text x="447" y="544" fill="#475569" font-size="11.5" font-weight="600">· 流量总量计入覆盖率分母，体现整体覆盖范围</text>
+  <text x="447" y="561" fill="#94a3b8" font-size="11">· 赛马结论仅用于匿名流量出价策略校验，与主实验独立</text>
+
+  <!-- ===== LEGEND ===== -->
+  <rect x="30" y="590" width="960" height="28" rx="6" fill="#f1f5f9"/>
+  <circle cx="56" cy="604" r="6" fill="#3b82f6"/>
+  <text x="68" y="608" fill="#475569" font-size="11">主实验人群（userid）</text>
+  <circle cx="210" cy="604" r="6" fill="#f59e0b"/>
+  <text x="222" y="608" fill="#475569" font-size="11">副实验人群（deviceid）</text>
+  <circle cx="370" cy="604" r="6" fill="#94a3b8"/>
+  <text x="382" y="608" fill="#475569" font-size="11">不纳入实验（无ID）</text>
+  <rect x="510" y="598" width="16" height="12" rx="2" fill="#eff6ff" stroke="#0ea5e9" stroke-width="1.5"/>
+  <text x="530" y="608" fill="#475569" font-size="11">决策判断节点</text>
+  <rect x="626" y="598" width="16" height="12" rx="2" fill="white" stroke="#475569" stroke-width="1.5"/>
+  <text x="646" y="608" fill="#475569" font-size="11">处理流程节点</text>
+  <rect x="740" y="598" width="16" height="12" rx="2" fill="#3b82f6"/>
+  <text x="760" y="608" fill="#475569" font-size="11">输出结果节点</text>
+</svg>
+</div>
+
+</body>
+</html>

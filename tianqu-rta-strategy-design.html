@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>天渠 RTA 策略结构设计文档</title>
+<style>
+:root {
+  --blue:#1d4ed8; --blue-lt:#eff6ff; --blue-bd:#bfdbfe;
+  --green:#059669; --green-lt:#f0fdf4; --green-bd:#bbf7d0;
+  --purple:#7c3aed; --purple-lt:#faf5ff; --purple-bd:#e9d5ff;
+  --amber:#d97706; --amber-lt:#fffbeb; --amber-bd:#fde68a;
+  --slate:#475569; --slate-lt:#f8fafc; --slate-bd:#e2e8f0;
+  --red:#dc2626; --red-lt:#fff1f2; --red-bd:#fecdd3;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:#f1f5f9;color:#1e293b;font-size:13.5px;line-height:1.75;}
+
+/* 页头 */
+.hd{background:linear-gradient(135deg,#0f172a,#1e3a8a 55%,#4c1d95);padding:24px 48px 22px;display:flex;align-items:center;gap:18px;}
+.hd-svg{width:42px;height:42px;flex-shrink:0;}
+.hd-info h1{color:#fff;font-size:18px;font-weight:800;}
+.hd-info p{color:rgba(255,255,255,.55);font-size:11.5px;margin-top:3px;}
+.hd-meta{margin-left:auto;display:flex;gap:10px;align-items:center;}
+.badge{padding:4px 12px;border-radius:14px;font-size:10.5px;font-weight:700;}
+.bg-b{background:rgba(96,165,250,.2);color:#93c5fd;border:1px solid rgba(96,165,250,.3);}
+.bg-g{background:rgba(52,211,153,.18);color:#6ee7b7;border:1px solid rgba(52,211,153,.25);}
+
+/* 主体 */
+.wrap{max-width:1100px;margin:0 auto;padding:32px 48px 56px;}
+
+/* 章节 */
+.section{margin-bottom:36px;}
+.section-title{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.st-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.st-text{font-size:16px;font-weight:800;color:#0f172a;}
+.st-sub{font-size:12px;color:#64748b;margin-left:4px;font-weight:400;}
+
+/* 子章节 */
+.sub-section{margin-bottom:24px;}
+.sub-title{font-size:14px;font-weight:800;color:#1e293b;margin-bottom:10px;padding-left:12px;border-left:3px solid var(--blue);}
+.sub-title.green{border-color:var(--green);}
+.sub-title.purple{border-color:var(--purple);}
+.sub-title.amber{border-color:var(--amber);}
+.sub-title.red{border-color:var(--red);}
+
+/* 卡片组 */
+.card-row{display:grid;gap:12px;margin-bottom:14px;}
+.cols-2{grid-template-columns:1fr 1fr;}
+.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.card{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.card-hd{padding:9px 14px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:7px;}
+.card-bd{padding:10px 14px 12px;font-size:12.5px;color:#374151;line-height:1.75;}
+
+.ch-blue{background:var(--blue);color:#fff;}
+.ch-green{background:var(--green);color:#fff;}
+.ch-purple{background:var(--purple);color:#fff;}
+.ch-amber{background:var(--amber);color:#fff;}
+.ch-slate{background:#334155;color:#fff;}
+.ch-red{background:var(--red);color:#fff;}
+
+/* 标签 */
+.t{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;margin:2px 2px;}
+.t-b{background:var(--blue-lt);color:var(--blue);}
+.t-g{background:var(--green-lt);color:var(--green);}
+.t-p{background:var(--purple-lt);color:var(--purple);}
+.t-a{background:var(--amber-lt);color:var(--amber);}
+.t-s{background:var(--slate-lt);color:var(--slate);}
+.t-r{background:var(--red-lt);color:var(--red);}
+
+/* 表格 */
+.doc-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07);font-size:12.5px;}
+.doc-table thead th{background:#f1f5f9;padding:9px 14px;font-weight:800;color:#1e293b;text-align:left;border-bottom:2px solid var(--slate-bd);}
+.doc-table tbody td{padding:9px 14px;border-bottom:1px solid #f1f5f9;vertical-align:top;color:#374151;}
+.doc-table tbody tr:last-child td{border-bottom:none;}
+.doc-table tbody tr:hover td{background:#f8fafc;}
+
+/* 桶示意图 */
+.tier-diagram{background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.tier-row{display:grid;grid-template-columns:60px 1fr 1fr 100px;gap:8px;align-items:center;padding:8px 10px;border-radius:5px;margin-bottom:5px;}
+.tier-row.header{background:var(--slate-lt);font-weight:800;font-size:11.5px;color:#475569;border-bottom:2px solid var(--slate-bd);}
+.tier-row.t1{background:#fdf2f8;border:1px solid #f9a8d4;}
+.tier-row.t2{background:#fef3c7;border:1px solid #fcd34d;}
+.tier-row.t3{background:#eff6ff;border:1px solid #93c5fd;}
+.tier-row.t4{background:#f0fdf4;border:1px solid #86efac;}
+.tier-row.t-rest{background:#f8fafc;border:1px dashed #94a3b8;}
+.tier-num{font-size:11.5px;font-weight:800;text-align:center;}
+.tier-cond{font-size:12px;font-family:monospace;color:#1e293b;}
+.tier-labels{display:flex;flex-wrap:wrap;gap:3px;}
+.tier-price{font-size:12.5px;font-weight:800;color:var(--purple);text-align:right;}
+
+/* 双层对比图 */
+.dual-layer{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
+.layer-box{border-radius:8px;overflow:hidden;}
+.lb-head{padding:11px 16px;font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;}
+.lb-body{padding:14px 16px;line-height:1.8;font-size:12.5px;color:#374151;}
+.lb-body li{margin-left:18px;margin-bottom:3px;}
+
+/* 原则卡片 */
+.principle-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.p-card{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.pc-hd{padding:11px 14px;font-size:12.5px;font-weight:800;color:#fff;display:flex;align-items:center;gap:7px;}
+.pc-bd{padding:12px 14px 14px;font-size:12px;color:#374151;line-height:1.75;}
+.pc-bd .key{font-weight:700;color:#1e293b;}
+.pc-bd .formula{background:#f1f5f9;border:1px solid var(--slate-bd);border-radius:4px;padding:6px 10px;font-family:monospace;font-size:12px;margin:8px 0;display:block;}
+
+/* 流程步骤 */
+.flow-line{display:flex;align-items:flex-start;gap:0;flex-wrap:wrap;}
+.fl-step{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;}
+.fl-box{padding:7px 13px;border-radius:6px;font-size:12px;font-weight:700;border:1.5px solid;white-space:nowrap;}
+.fl-sub{font-size:10px;color:#94a3b8;text-align:center;max-width:90px;}
+.fl-arr{color:#94a3b8;font-size:16px;padding:0 5px;flex-shrink:0;margin-top:10px;}
+
+/* 高亮块 */
+.highlight-box{border-radius:7px;padding:13px 16px;margin-bottom:12px;border-left:4px solid;}
+.hb-blue{background:var(--blue-lt);border-color:var(--blue);}
+.hb-green{background:var(--green-lt);border-color:var(--green);}
+.hb-amber{background:var(--amber-lt);border-color:var(--amber);}
+.hb-purple{background:var(--purple-lt);border-color:var(--purple);}
+.hb-red{background:var(--red-lt);border-color:var(--red);}
+.hb-title{font-weight:800;margin-bottom:4px;}
+
+/* 数据示例块 */
+.code-block{background:#1e293b;border-radius:7px;padding:14px 18px;font-family:monospace;font-size:12px;line-height:1.8;color:#e2e8f0;overflow-x:auto;}
+.cb-key{color:#7dd3fc;}
+.cb-val{color:#86efac;}
+.cb-str{color:#fca5a5;}
+.cb-comment{color:#64748b;}
+
+/* 分割线 */
+.divider{border:none;border-top:1.5px solid var(--slate-bd);margin:28px 0;}
+
+/* 比较矩阵 */
+.matrix-table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.matrix-table th,.matrix-table td{padding:9px 13px;border:1px solid #e2e8f0;text-align:center;}
+.matrix-table thead th{background:#f1f5f9;font-weight:800;color:#1e293b;}
+.matrix-table .row-label{background:#f8fafc;font-weight:700;text-align:left;color:#374151;}
+.cell-pos{background:#f0fdf4;color:var(--green);font-weight:700;}
+.cell-neg{background:var(--red-lt);color:var(--red);font-weight:700;}
+.cell-neu{background:#f8fafc;color:#64748b;}
+.cell-base{background:var(--amber-lt);color:var(--amber);font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- 页头 -->
+<div class="hd">
+  <svg class="hd-svg" viewBox="0 0 80 80" fill="none">
+    <defs><linearGradient id="G" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient></defs>
+    <path d="M14 65L14 37L40 14L66 37L66 65" stroke="url(#G)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M27 65L27 48L40 35L53 48L53 65" fill="url(#G)" opacity=".75"/>
+  </svg>
+  <div class="hd-info">
+    <h1>天渠 RTA 策略结构设计文档</h1>
+    <p>内外双层结构设计 · 策略实验原则 · 分桶校验与增量分析方法</p>
+  </div>
+  <div class="hd-meta">
+    <span class="badge bg-b">RTA 策略 v2.0</span>
+    <span class="badge bg-g">拉新 · 拉活</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== 一、策略定位 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--slate);">0</div>
+      <span class="st-text">策略定位与核心目标</span>
+    </div>
+
+    <div class="highlight-box hb-blue">
+      <div class="hb-title">RTA 策略的核心价值</div>
+      RTA 策略是天渠对每一次广告竞价请求的<strong>出价决策规则</strong>，决定对哪些用户出价、出多少价。其最终目标是在控制成本（ROI_0 护栏）的前提下，最大化新客中的 B 用户浓度（北极星指标：人均 LTV_0）。
+    </div>
+
+    <div class="card-row cols-3">
+      <div class="card">
+        <div class="card-hd ch-blue">🎯 北极星指标</div>
+        <div class="card-bd">人均 LTV_0（新客生命周期价值）<br><br>通过 pLTV 模型预测用户价值分层，对高价值用户出更高的价，提升整体新客质量。</div>
+      </div>
+      <div class="card">
+        <div class="card-hd ch-amber">🛡️ 护栏指标</div>
+        <div class="card-bd">ROI_0（实验组 ≥ 空白组 且 ≥ 对照组）<br><br>避免为追求 B 浓度而盲目抬价，确保花费产生的新客 ROI 不低于基线。</div>
+      </div>
+      <div class="card">
+        <div class="card-hd ch-green">💧 核心观测指标</div>
+        <div class="card-bd">△B 用户浓度（绝对增益）<br><br>量化策略对「新客中 B 用户占比」的提升效果，是策略好坏的核心判断依据。</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== 二、双层结构 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--blue);">1</div>
+      <span class="st-text">RTA 策略双层结构设计</span>
+      <span class="st-sub">内层（人群规则标签出价矩阵） · 外层（算法模型版本迭代）</span>
+    </div>
+
+    <div class="dual-layer">
+      <!-- 内层 -->
+      <div class="layer-box" style="border:2px solid var(--blue-bd);">
+        <div class="lb-head" style="background:var(--blue);">
+          <span>🔢</span>内层：人群规则标签出价矩阵
+        </div>
+        <div class="lb-body" style="background:var(--blue-lt);">
+          <div style="font-weight:700;margin-bottom:6px;color:var(--blue);">「一个策略内部」的分层出价设计</div>
+          <ul>
+            <li>将所有用户按人群特征标签划分为最多 <strong>10 个规则层</strong></li>
+            <li>每个规则层对应一组<strong>人群规则标签条件区间</strong>（序准/浓度/cvr 等）</li>
+            <li>每个规则层绑定一个具体<strong>出价值</strong>（系数或 CPA）</li>
+            <li>命中逻辑：自规则层 1 → 规则层 10 <strong>自上而下遍历</strong>，命中第一个满足的层</li>
+            <li>未命中任何层：兜底出价 或 放弃本次竞价</li>
+          </ul>
+          <div style="margin-top:10px;padding:8px 10px;background:white;border-radius:5px;font-size:12px;color:var(--blue);">
+            <strong>内层实验目标：</strong>验证当前策略下，各人群规则层的出价配置是否最优（桶内梯度校验）
+          </div>
+        </div>
+      </div>
+      <!-- 外层 -->
+      <div class="layer-box" style="border:2px solid var(--green-bd);">
+        <div class="lb-head" style="background:var(--green);">
+          <span>🧩</span>外层：算法模型策略版本迭代
+        </div>
+        <div class="lb-body" style="background:var(--green-lt);">
+          <div style="font-weight:700;margin-bottom:6px;color:var(--green);">「整体策略」作为一个算法单元</div>
+          <ul>
+            <li>将整条策略（含所有人群规则层的条件 + 出价矩阵）视为<strong>一个整体算法版本</strong></li>
+            <li>每个策略版本对应一个<strong>模型迭代版本</strong>（如 RTA V15_4 → RTA V16_1）</li>
+            <li>在 RTA 实验管理中，不同版本策略分配到<strong>实验组1 / 实验组2</strong></li>
+            <li>对照组绑定<strong>历史优版策略</strong>，作为稳定基线</li>
+            <li>通过 A/B 赛马决定是否用新版本替换对照策略</li>
+          </ul>
+          <div style="margin-top:10px;padding:8px 10px;background:white;border-radius:5px;font-size:12px;color:var(--green);">
+            <strong>外层实验目标：</strong>验证新版整体策略相比历史优版是否有显著提升（版本迭代校验）
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 内外层关联说明 -->
+    <div class="highlight-box hb-purple" style="margin-bottom:0;">
+      <div class="hb-title">内外层关系说明</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin-top:8px;">
+        <div style="font-size:12.5px;">
+          <strong>内层</strong>解决"在当前人群划分方式下，每层出多少价"的问题。<br>
+          调整对象是人群规则层条件阈值（如 pLTV&gt;5 → pLTV&gt;4.5）和出价值（如 48000 → 51000）。
+        </div>
+        <div style="text-align:center;font-size:22px;color:var(--purple);">⇄</div>
+        <div style="font-size:12.5px;">
+          <strong>外层</strong>解决"哪套人群划分方式 + 出价组合方案整体更优"的问题。<br>
+          调整对象是分层维度组合（如增加 cvr 维度）和整体标签逻辑（如引入 Lookalike 扩量）。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== 三、内层详解 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--blue);">2</div>
+      <span class="st-text">内层详解：人群规则标签出价矩阵</span>
+    </div>
+
+    <!-- 分层维度 -->
+    <div class="sub-section">
+      <div class="sub-title">2.1 分层标签维度</div>
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>维度</th><th>标签名</th><th>含义</th><th>数据来源</th><th>典型区间示例</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="t t-b">序准（pLTV）</span></td>
+            <td><code>pLTV</code></td>
+            <td>用户生命周期价值预估得分，反映用户对业务的长期贡献价值</td>
+            <td>pLTV 预测模型，每日批跑，写入 Tair</td>
+            <td><code>pLTV&gt;8</code>，<code>3&lt;pLTV≤5</code>，<code>pLTV≤2</code></td>
+          </tr>
+          <tr>
+            <td><span class="t t-g">浓度（preB）</span></td>
+            <td><code>preB</code></td>
+            <td>用户成为 B 类买家的概率预估，即 B 用户浓度信号</td>
+            <td>BA 分层模型，每日批跑，写入 Tair</td>
+            <td><code>preB&gt;0.2</code>，<code>0.13&lt;preB≤0.17</code></td>
+          </tr>
+          <tr>
+            <td><span class="t t-p">值准（cvr）</span></td>
+            <td><code>cvr</code></td>
+            <td>用户购买转化率预估，反映用户在当前投放场景的转化可能性</td>
+            <td>cvr 转化率模型，每日批跑，写入 Tair</td>
+            <td><code>cvr&gt;0.05</code>，<code>cvr&gt;0.03</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 条件组合规则 -->
+    <div class="sub-section">
+      <div class="sub-title">2.2 条件组合规则</div>
+      <div class="highlight-box hb-blue">
+        <div class="hb-title">多维度标签「且」逻辑组合</div>
+        每个人群规则层的入桶条件由多个维度的标签区间通过「且」逻辑连接，同时满足所有条件的用户才命中该规则层。
+        <br><br>
+        <strong>格式：</strong><code style="background:#dbeafe;padding:2px 6px;border-radius:3px;">维度1 运算符 阈值 且 维度2 运算符 阈值 且 …</code>
+        <br><br>
+        <strong>示例：</strong><code style="background:#dbeafe;padding:2px 6px;border-radius:3px;">pLTV&gt;8 且 preB&gt;0.2</code>　→　高价值 + 高B浓度双重筛选，为规则层 1 最优质客群
+      </div>
+      <div class="card-row" style="grid-template-columns:1fr 1fr;">
+        <div class="card">
+          <div class="card-hd ch-slate">支持的运算符</div>
+          <div class="card-bd">
+            <span class="t t-s">&gt;（大于）</span>
+            <span class="t t-s">≥（大于等于）</span>
+            <span class="t t-s">&lt;（小于）</span>
+            <span class="t t-s">≤（小于等于）</span>
+            <br><br>
+            区间值通过双侧条件表达，如：<br>
+            <code>2.0 &lt; pLTV ≤ 2.5</code>（使用两条独立规则层行拆分）
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-slate">可选维度勾选规则</div>
+          <div class="card-bd">
+            出价策略编辑时，可按需勾选参与条件的维度：<br>
+            <span class="t t-b">☑ pLTV 出价</span>
+            <span class="t t-g">☑ B浓度出价（preB）</span>
+            <span class="t t-p">☑ cvr 出价</span>
+            <br><br>
+            仅勾选的维度会出现在条件标签中，未勾选维度不参与该策略的分层判断。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 出价分层示意 -->
+    <div class="sub-section">
+      <div class="sub-title">2.3 人群规则标签出价示意（全局分流策略 · RTA V15_4 · CPA 出价模式）</div>
+      <div class="tier-diagram">
+        <div class="tier-row header">
+          <div>人群规则层</div><div>入桶条件</div><div>标签维度</div><div>出价（CPA）</div>
+        </div>
+        <div class="tier-row t1">
+          <div class="tier-num" style="color:#be185d;">规则层 1</div>
+          <div class="tier-cond">pLTV &gt; 8 且 preB &gt; 0.2</div>
+          <div class="tier-labels"><span class="t t-b">高pLTV</span><span class="t t-g">高B浓度</span></div>
+          <div class="tier-price">65,000</div>
+        </div>
+        <div class="tier-row t2">
+          <div class="tier-num" style="color:#b45309;">规则层 2</div>
+          <div class="tier-cond">pLTV &gt; 5 且 preB &gt; 0.17</div>
+          <div class="tier-labels"><span class="t t-b">中高pLTV</span><span class="t t-g">中高B浓度</span></div>
+          <div class="tier-price">48,000</div>
+        </div>
+        <div class="tier-row t3">
+          <div class="tier-num" style="color:var(--blue);">规则层 3</div>
+          <div class="tier-cond">pLTV &gt; 3 且 preB &gt; 0.15</div>
+          <div class="tier-labels"><span class="t t-b">中pLTV</span><span class="t t-g">中B浓度</span></div>
+          <div class="tier-price">43,000</div>
+        </div>
+        <div class="tier-row t4">
+          <div class="tier-num" style="color:var(--green);">规则层 4</div>
+          <div class="tier-cond">pLTV &gt; 2.8 且 preB &gt; 0.14</div>
+          <div class="tier-labels"><span class="t t-b">pLTV≥2.8</span><span class="t t-g">preB≥0.14</span></div>
+          <div class="tier-price">40,000</div>
+        </div>
+        <div class="tier-row t-rest">
+          <div class="tier-num" style="color:#64748b;">规则层 5–10</div>
+          <div class="tier-cond">递降的 pLTV / preB 区间条件…</div>
+          <div class="tier-labels"><span class="t t-s">梯度递减</span></div>
+          <div class="tier-price" style="color:#94a3b8;">15,000–35,000</div>
+        </div>
+        <div style="margin-top:10px;font-size:11.5px;color:#64748b;padding:0 4px;">
+          ↑ 命中逻辑：请求到达后，从规则层 1 开始依次判断，命中首个满足条件的层即执行对应出价。未命中任何层则兜底出价或放弃竞价。
+        </div>
+      </div>
+    </div>
+
+    <!-- 出价模式 -->
+    <div class="sub-section">
+      <div class="sub-title">2.4 出价模式</div>
+      <div class="card-row cols-3">
+        <div class="card">
+          <div class="card-hd ch-blue">系数出价（Multiplier）</div>
+          <div class="card-bd">
+            在媒体基础出价上乘以系数，如 <code>1.8×</code>、<code>0.9×</code><br><br>
+            适合：出价参考媒体预估价，做相对调整；<br>
+            优点：灵活、易于跨媒体统一管理
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-purple">CPA 出价（目标转化价）</div>
+          <div class="card-bd">
+            直接指定愿意为每次转化支付的最高金额，如 <code>65,000</code><br><br>
+            适合：对转化价值有明确估算的场景；<br>
+            优点：直接与 LTV_0 对应，方便 ROI 控制
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-amber">混合出价（Hybrid）</div>
+          <div class="card-bd">
+            高价值规则层用 CPA 出价控制成本，低价值规则层用系数出价做弹性覆盖<br><br>
+            适合：人群层次差异明显、需要精细化控价的策略
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== 四、外层详解 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--green);">3</div>
+      <span class="st-text">外层详解：算法模型策略版本迭代</span>
+    </div>
+
+    <div class="sub-section">
+      <div class="sub-title green">3.1 策略版本与实验绑定关系</div>
+      <table class="doc-table">
+        <thead>
+          <tr><th>RTA 实验中的组别</th><th>绑定策略</th><th>角色定义</th><th>流量占比</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="t t-b">实验组 1</span></td>
+            <td>新版策略 A（如 RTA V16_1）</td>
+            <td>待验证的候选模型版本，引入新的分层维度或调整条件阈值</td>
+            <td>45%</td>
+          </tr>
+          <tr>
+            <td><span class="t t-g">实验组 2</span></td>
+            <td>新版策略 B（如 RTA V16_2）</td>
+            <td>另一候选版本，可与实验组1同时赛马，加速迭代决策</td>
+            <td>45%</td>
+          </tr>
+          <tr>
+            <td><span class="t t-a">对照组</span></td>
+            <td>历史优版策略（稳定基线）</td>
+            <td>固定绑定上一轮实验推全的最优版本，不随实验变化</td>
+            <td>9%</td>
+          </tr>
+          <tr>
+            <td><span class="t t-s">空白组（贯穿实验层）</span></td>
+            <td>无策略（不出价）</td>
+            <td>HoldOut 全局保留组，测量 RTA 整体增量 ROI，完全不干预</td>
+            <td>1%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sub-section">
+      <div class="sub-title green">3.2 版本迭代推全决策流程</div>
+      <div style="background:#fff;border-radius:8px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);">
+        <div class="flow-line">
+          <div class="fl-step">
+            <div class="fl-box" style="background:var(--slate-lt);border-color:var(--slate-bd);color:#334155;">新版策略上线</div>
+            <div class="fl-sub">配置人群规则层条件 + 出价，绑定实验组</div>
+          </div>
+          <div class="fl-arr">→</div>
+          <div class="fl-step">
+            <div class="fl-box" style="background:var(--blue-lt);border-color:var(--blue-bd);color:var(--blue);">AB 赛马运行</div>
+            <div class="fl-sub">≥14天，满足样本量硬约束</div>
+          </div>
+          <div class="fl-arr">→</div>
+          <div class="fl-step">
+            <div class="fl-box" style="background:var(--amber-lt);border-color:var(--amber-bd);color:var(--amber);">查看实验报告</div>
+            <div class="fl-sub">ROI_0 护栏 + LTV_0 北极星</div>
+          </div>
+          <div class="fl-arr">→</div>
+          <div class="fl-step">
+            <div class="fl-box" style="background:var(--green-lt);border-color:var(--green-bd);color:var(--green);">推全新版策略</div>
+            <div class="fl-sub">选择ROI_0 ≥ 基线 且 LTV_0 最大的实验组</div>
+          </div>
+          <div class="fl-arr">→</div>
+          <div class="fl-step">
+            <div class="fl-box" style="background:var(--purple-lt);border-color:var(--purple-bd);color:var(--purple);">成为新对照基线</div>
+            <div class="fl-sub">推全策略成为下一轮对照组历史优版</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:#64748b;background:var(--slate-lt);padding:8px 12px;border-radius:5px;">
+          <strong>推全判定条件：</strong>ROI_0（实验组）≥ ROI_0（空白组） 且 ROI_0（实验组）≥ ROI_0（对照组），在满足护栏的实验组中取人均 LTV_0 最大的进行推全。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== 五、策略原则 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--purple);">4</div>
+      <span class="st-text">三大策略实验原则</span>
+    </div>
+
+    <div class="principle-grid">
+
+      <!-- 原则1 -->
+      <div class="p-card">
+        <div class="pc-hd" style="background:var(--blue);">
+          <span>⚖️</span>原则一：出价机制运行原则
+        </div>
+        <div class="pc-bd">
+          <div class="key">出价对每个用户公平，不依赖分桶历史浓度</div>
+          <br>
+          每次 RTA 请求到达时，系统根据用户当前实时标签（pLTV / preB / cvr）进行条件匹配并出价。<br><br>
+          <strong>关键点：</strong>
+          <ul style="margin-left:16px;margin-top:4px;">
+            <li>出价决策仅依赖「用户此时的实时特征」，与该用户历史上被分到哪个桶无关</li>
+            <li>不同规则层的出价差异来自用户真实特征的差异，不是人群偏差造成的</li>
+            <li>因此出价机制本身<strong>不要求各桶初始浓度一致</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 原则2 -->
+      <div class="p-card">
+        <div class="pc-hd" style="background:var(--amber);">
+          <span>🔍</span>原则二：单桶分流校验原则
+        </div>
+        <div class="pc-bd">
+          <div class="key">实验启动前：分桶客群 ≈ 无实验 Baseline</div>
+          <br>
+          在正式运行 RTA 策略实验之前，需要验证分桶机制本身不引入人群偏差。<br><br>
+          <strong>校验方法：</strong>
+          <code class="formula">∀ 桶 k：P(用户特征 | 桶 k) ≈ P(用户特征 | 全量)</code>
+          <strong>校验维度：</strong>pLTV 分布、preB 分布、历史消费分布等基础特征<br><br>
+          <strong>校验通过条件：</strong>任意分桶的客群特征分布与无实验基线保持统计一致，方可开始实验。否则需重新检查哈希函数或分桶逻辑。
+        </div>
+      </div>
+
+      <!-- 原则3 -->
+      <div class="p-card">
+        <div class="pc-hd" style="background:var(--green);">
+          <span>📊</span>原则三：跨桶增量分析原则
+        </div>
+        <div class="pc-bd">
+          <div class="key">跨桶比较必须保证初始浓度一致</div>
+          <br>
+          当需要比较不同规则层桶之间的指标差异时（如规则层 1 vs 规则层 3 的 B 浓度），各桶的<strong>初始 B 用户浓度必须一致</strong>，否则桶间差异来自人群偏差而非策略效果。<br><br>
+          <strong>核心目标指标：</strong>
+          <code class="formula">△B浓度 = B浓度（实验桶）− B浓度（空白组）</code>
+          <ul style="margin-left:16px;margin-top:4px;">
+            <li>△ 越大，说明该规则层出价策略对拉升 B 浓度的贡献越显著</li>
+            <li>初始浓度一致性由<strong>分层哈希（Stratified Hashing）</strong>保障</li>
+            <li>分层哈希在 S/A/B/C 各价值层内分别执行 hash(userid)%10，确保各桶人群结构期望相等</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== 六、内外层实验对照 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--amber);">5</div>
+      <span class="st-text">内外层实验设计对照矩阵</span>
+    </div>
+
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th>维度</th>
+          <th>内层（人群规则层校验）</th>
+          <th>外层（策略版本赛马）</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>实验单元</td>
+          <td>单个规则层桶（规则层 1 vs 规则层 2 vs … vs 空白桶）</td>
+          <td>整条策略（实验组1 vs 实验组2 vs 对照组）</td>
+        </tr>
+        <tr>
+          <td>分流方式</td>
+          <td>hash(userid) % 10 → 媒体10桶均匀分配</td>
+          <td>hash(userid) % 10 → 实验组/对照组桶号映射</td>
+        </tr>
+        <tr>
+          <td>初始浓度要求</td>
+          <td><strong>必须一致</strong>（分层哈希保障），否则跨桶对比无效</td>
+          <td>不做特殊要求，因出价机制对每个用户独立公平</td>
+        </tr>
+        <tr>
+          <td>对照基线</td>
+          <td>空白桶（不出价的 HoldOut 组）</td>
+          <td>对照组（绑定历史优版策略）+ 空白组</td>
+        </tr>
+        <tr>
+          <td>核心观测指标</td>
+          <td>△B浓度（各规则层相对空白桶的绝对增益）</td>
+          <td>ROI_0（护栏）、人均 LTV_0（北极星）、△B浓度</td>
+        </tr>
+        <tr>
+          <td>实验目标</td>
+          <td>找到最优的人群规则层条件阈值和出价值组合</td>
+          <td>确定新版整体算法策略是否优于历史优版</td>
+        </tr>
+        <tr>
+          <td>调整粒度</td>
+          <td>细粒度：单个规则层条件微调（如阈值 ±0.1）</td>
+          <td>粗粒度：整版策略替换（可涉及维度、模型、出价逻辑全面升级）</td>
+        </tr>
+        <tr>
+          <td>实验结论作用</td>
+          <td>指导单版策略内部的优化迭代</td>
+          <td>决定是否将新版策略推全，成为下一轮对照基线</td>
+        </tr>
+        <tr>
+          <td>两层关系</td>
+          <td colspan="2" style="text-align:center;color:var(--purple);font-weight:700;">两层机制相互独立，不占用彼此桶位资源；内层校验合格的最优配置，汇入外层形成新版策略参与赛马</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== 七、分层哈希保障机制 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--slate);">6</div>
+      <span class="st-text">初始浓度一致性保障：分层哈希机制</span>
+    </div>
+
+    <div class="highlight-box hb-amber">
+      <div class="hb-title">问题根源</div>
+      若直接用 <code>hash(userid) % 10</code> 进行均匀分桶，当高价值用户（高 pLTV）碰巧集中在某几个桶时，桶间 B 用户浓度的初始差异会掩盖策略效果，导致无效结论。
+    </div>
+
+    <div class="card-row cols-2">
+      <div class="card">
+        <div class="card-hd ch-red">❌ 普通哈希（存在风险）</div>
+        <div class="card-bd">
+          直接 <code>hash(userid) % 10</code>，统计期望均匀但单次实验可能出现桶偏差：<br><br>
+          桶3 恰好含更多高 pLTV 用户 → 桶3 B浓度天然更高<br>
+          → 无法判断是出价策略好，还是人群更优质
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd ch-green">✅ 分层哈希（Stratified Hashing）</div>
+        <div class="card-bd">
+          先将全量用户按 pLTV 划分为 S/A/B/C 层级，再在每层内独立执行 <code>hash(userid) % 10</code>：<br><br>
+          → 每个桶内 S/A/B/C 用户比例数学期望完全一致<br>
+          → 消除人群分布差异，桶间 △B浓度 完全来自策略效果
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;background:#fff;border-radius:8px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);">
+      <div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:10px;">分层哈希桶结构示意</div>
+      <div style="display:grid;grid-template-columns:80px repeat(10,1fr);gap:4px;font-size:11px;text-align:center;">
+        <div style="font-weight:700;color:#64748b;padding:6px 0;"></div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶1</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶2</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶3</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶4</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶5</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶6</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶7</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶8</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶9</div>
+        <div style="background:var(--slate-lt);border-radius:3px;padding:5px 0;font-weight:800;color:#334155;">桶10</div>
+
+        <div style="font-weight:700;color:#be185d;padding:5px 0;text-align:right;padding-right:8px;">S 层</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+        <div style="background:#fdf2f8;border:1px solid #f9a8d4;border-radius:3px;padding:5px 0;color:#be185d;">S/10</div>
+
+        <div style="font-weight:700;color:var(--amber);padding:5px 0;text-align:right;padding-right:8px;">A 层</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+        <div style="background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:3px;padding:5px 0;color:var(--amber);">A/10</div>
+
+        <div style="font-weight:700;color:var(--blue);padding:5px 0;text-align:right;padding-right:8px;">B 层</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+        <div style="background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px;padding:5px 0;color:var(--blue);">B/10</div>
+
+        <div style="font-weight:700;color:var(--slate);padding:5px 0;text-align:right;padding-right:8px;">C 层</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+        <div style="background:var(--slate-lt);border:1px solid var(--slate-bd);border-radius:3px;padding:5px 0;color:var(--slate);">C/10</div>
+      </div>
+      <div style="margin-top:10px;font-size:11.5px;color:#64748b;">
+        ↑ 每个桶内 S/A/B/C 各层用户数量期望相等（均为该层总量的 1/10），各桶初始 pLTV 分布和 B 浓度完全一致。
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== 八、工程约束 ===== -->
+  <div class="section">
+    <div class="section-title">
+      <div class="st-num" style="background:var(--red);">7</div>
+      <span class="st-text">实验工程硬约束</span>
+      <span class="st-sub">实验结论有效性的必要条件</span>
+    </div>
+
+    <div class="card-row" style="grid-template-columns:repeat(4,1fr);">
+      <div class="card">
+        <div class="card-hd ch-red">📋 约束一：计划数</div>
+        <div class="card-bd">每个实验组计划数<br><br><strong style="font-size:20px;color:var(--red);">≥ 30</strong> 个<br><br>确保投放样本覆盖足够广，避免单计划效果异常干扰结论</div>
+      </div>
+      <div class="card">
+        <div class="card-hd ch-red">💰 约束二：日均消耗</div>
+        <div class="card-bd">每组日均花费<br><br><strong style="font-size:20px;color:var(--red);">≥ 2 万元</strong><br><br>保证足够的流量和转化量，达到统计显著性要求</div>
+      </div>
+      <div class="card">
+        <div class="card-hd ch-red">🎯 约束三：累计转化</div>
+        <div class="card-bd">每组累计转化数<br><br><strong style="font-size:20px;color:var(--red);">≥ 100 个</strong><br><br>达到最小样本量，确保转化率和 ROI 指标的可信度</div>
+      </div>
+      <div class="card">
+        <div class="card-hd ch-red">📅 约束四：实验周期</div>
+        <div class="card-bd">冷启完成后起算<br><br><strong style="font-size:20px;color:var(--red);">≥ 14 天</strong><br><br>覆盖至少 2 个完整投放节奏周期，消除短期波动影响</div>
+      </div>
+    </div>
+
+    <div class="highlight-box hb-red" style="margin-top:14px;">
+      <div class="hb-title">空白组与融合组特殊说明</div>
+      空白组（1% 流量）因占比极小，转化量达标尤为困难，需重点监控。未满足约束时应<strong>延长实验周期</strong>而非提前下结论，避免伪阳性判断。
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

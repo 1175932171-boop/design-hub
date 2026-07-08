@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>各信息流平台 MAPI 鸿蒙投放接口文档</title>
+  <style>
+    :root {
+      --blue: #1a6fc4;
+      --light-blue: #e8f1fb;
+      --green: #0f9960;
+      --light-green: #e6f7ef;
+      --orange: #d66b00;
+      --light-orange: #fff3e0;
+      --purple: #7c3aed;
+      --light-purple: #f3eeff;
+      --red: #c0392b;
+      --bg: #f4f7fc;
+      --text: #1d2a3a;
+      --border: #d1dce9;
+      --tag-bg: #eaf1fb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.65; }
+    .header { background: linear-gradient(135deg, #1a2b4a 0%, #1a6fc4 100%); color: #fff; padding: 36px 48px; }
+    .header h1 { font-size: 26px; font-weight: 700; letter-spacing: 0.5px; }
+    .header p { margin-top: 8px; opacity: 0.85; font-size: 14px; }
+    .header .badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 12px; font-size: 12px; margin-top: 12px; margin-right: 8px; }
+    .nav { background: #fff; border-bottom: 1px solid var(--border); padding: 0 48px; display: flex; gap: 0; overflow-x: auto; }
+    .nav a { display: inline-block; padding: 14px 20px; color: #4a6080; text-decoration: none; font-size: 13px; font-weight: 500; white-space: nowrap; border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .nav a:hover { color: var(--blue); border-bottom-color: var(--blue); }
+    .main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 60px; }
+    .channel-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 36px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .channel-header { padding: 20px 28px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--border); }
+    .channel-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .channel-title { font-size: 18px; font-weight: 700; }
+    .channel-meta { font-size: 12px; color: #7a8ba0; margin-top: 3px; }
+    .channel-status { margin-left: auto; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-live { background: var(--light-green); color: var(--green); }
+    .channel-body { padding: 24px 28px; }
+    .section-title { font-size: 13px; font-weight: 700; color: #4a6080; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px dashed var(--border); display: flex; align-items: center; gap: 6px; }
+    .api-block { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+    .api-block .endpoint { font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-size: 13px; }
+    .method-badge { display: inline-block; background: var(--blue); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
+    .method-get { background: var(--green); }
+    .api-block .url { color: var(--text); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    thead th { background: #f0f5fb; color: #2d4060; font-size: 12px; font-weight: 700; padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid #ecf0f7; font-size: 13px; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f7f9fc; }
+    .field-name { font-family: "SF Mono", "Fira Code", monospace; color: var(--blue); font-size: 12px; font-weight: 600; }
+    .enum-val { display: inline-block; background: var(--tag-bg); color: var(--blue); font-family: "SF Mono", monospace; font-size: 11px; padding: 2px 7px; border-radius: 4px; margin: 2px 2px 2px 0; border: 1px solid #c5d9f0; }
+    .enum-val.highlight { background: #e8f7ef; color: var(--green); border-color: #a8dfc0; }
+    .enum-val.warn { background: #fff3e0; color: var(--orange); border-color: #f8c97c; }
+    .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-right: 4px; }
+    .tag-required { background: #fce8e8; color: #c0392b; }
+    .tag-optional { background: #e8f0fa; color: #3b6ab5; }
+    .tag-new { background: #e8faf2; color: #0f9960; }
+    .note-box { background: #fffbea; border-left: 4px solid #f6c23e; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 13px; color: #7a5c00; }
+    .note-box strong { color: #5a4200; }
+    .warn-box { background: #fff3f3; border-left: 4px solid #e74c3c; border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 13px; color: #7a0000; }
+    .info-box { background: var(--light-blue); border-left: 4px solid var(--blue); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; font-size: 13px; color: #0d3b72; }
+    .sub-section { margin-bottom: 24px; }
+    .divider { border: none; border-top: 1px dashed var(--border); margin: 20px 0; }
+    /* channel colors */
+    .ch-bytedance .channel-header { background: linear-gradient(135deg, #1a6fc4 0%, #2b8df0 100%); color: #fff; border-bottom: none; }
+    .ch-bytedance .channel-title, .ch-bytedance .channel-meta { color: #fff; }
+    .ch-tencent .channel-header { background: linear-gradient(135deg, #0d7a59 0%, #1aad87 100%); color: #fff; border-bottom: none; }
+    .ch-tencent .channel-title, .ch-tencent .channel-meta { color: #fff; }
+    .ch-kuaishou .channel-header { background: linear-gradient(135deg, #d66b00 0%, #f5a623 100%); color: #fff; border-bottom: none; }
+    .ch-kuaishou .channel-title, .ch-kuaishou .channel-meta { color: #fff; }
+    .ch-baidu .channel-header { background: linear-gradient(135deg, #1c3caa 0%, #2756f5 100%); color: #fff; border-bottom: none; }
+    .ch-baidu .channel-title, .ch-baidu .channel-meta { color: #fff; }
+    .ch-bytedance .channel-status, .ch-tencent .channel-status, .ch-kuaishou .channel-status, .ch-baidu .channel-status { background: rgba(255,255,255,0.2); color: #fff; }
+    .flow-steps { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; align-items: center; }
+    .flow-step { background: var(--light-blue); color: var(--blue); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; }
+    .flow-arrow { color: #8aa0c0; font-size: 16px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .summary-card { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 20px; text-align: center; }
+    .summary-card .icon { font-size: 28px; margin-bottom: 8px; }
+    .summary-card .name { font-size: 13px; font-weight: 700; color: #2d4060; }
+    .summary-card .api-ver { font-size: 11px; color: #7a8ba0; margin-top: 4px; }
+    .summary-card .support { font-size: 12px; font-weight: 600; color: var(--green); margin-top: 8px; }
+    @media (max-width: 900px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .main { padding: 16px; } .header { padding: 24px 20px; } .nav { padding: 0 16px; } .channel-body { padding: 16px; } .summary-grid { grid-template-columns: 1fr 1fr; } }
+    .toc-inline { background: #f0f5fb; border-radius: 8px; padding: 14px 20px; margin-bottom: 28px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+    .toc-inline span { font-size: 12px; font-weight: 600; color: #4a6080; }
+    .toc-inline a { font-size: 13px; color: var(--blue); text-decoration: none; }
+    .toc-inline a:hover { text-decoration: underline; }
+    details summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--blue); padding: 4px 0; }
+    details[open] summary { margin-bottom: 10px; }
+    .version-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 6px; background: #e8f1fb; color: var(--blue); border: 1px solid #c5d9f0; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌟 各信息流平台 MAPI 鸿蒙投放接口文档</h1>
+  <p>梳理头条巨量引擎、腾讯广点通、快手磁力引擎、百度百青藤等平台支持鸿蒙（HarmonyOS）APP下载投放的 MAPI 字段与枚举值</p>
+  <span class="badge">📱 鸿蒙 HarmonyOS NEXT</span>
+  <span class="badge">🔧 MAPI 对接参考</span>
+  <span class="badge">📅 2025 / 2026 适用</span>
+</div>
+
+<div class="nav">
+  <a href="#overview">概览</a>
+  <a href="#bytedance">巨量引擎</a>
+  <a href="#tencent">腾讯广告</a>
+  <a href="#kuaishou">磁力引擎</a>
+  <a href="#baidu">百度百青藤</a>
+</div>
+
+<div class="main">
+
+  <!-- 概览 -->
+  <div id="overview">
+    <div class="toc-inline">
+      <span>快速跳转：</span>
+      <a href="#bytedance">① 巨量引擎（头条）</a>
+      <a href="#tencent">② 腾讯广告（广点通）</a>
+      <a href="#kuaishou">③ 磁力引擎（快手）</a>
+      <a href="#baidu">④ 百青藤（百度）</a>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="icon">🎵</div>
+        <div class="name">巨量引擎</div>
+        <div class="api-ver">巨量营销升级版 v3.0</div>
+        <div class="support">✅ 全面支持鸿蒙</div>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🐧</div>
+        <div class="name">腾讯广告（广点通）</div>
+        <div class="api-ver">Marketing API v3.0 / v1.1</div>
+        <div class="support">✅ 全面支持鸿蒙</div>
+      </div>
+      <div class="summary-card">
+        <div class="icon">⚡</div>
+        <div class="name">磁力引擎（快手）</div>
+        <div class="api-ver">快手 MAPI v2.0</div>
+        <div class="support">✅ 支持鸿蒙 APP 下载</div>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🔍</div>
+        <div class="name">百度百青藤</div>
+        <div class="api-ver">百度信息流 Feed API</div>
+        <div class="support">✅ 2026-05 起全面支持</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>整体说明：</strong> 各平台均在 2024～2026 年间先后完整打通鸿蒙 APP 下载投放通路。投放前需在各平台完成<b>鸿蒙应用资产注册</b>（上传应用包名 / AppGallery 链接）、<b>转化事件联调</b>，再通过 MAPI 创建广告时指定相应的鸿蒙字段枚举值即可。
+    </div>
+  </div>
+
+  <!-- ===== 巨量引擎 ===== -->
+  <div id="bytedance" class="channel-card ch-bytedance">
+    <div class="channel-header">
+      <div class="channel-icon" style="background:rgba(255,255,255,0.2)">🎵</div>
+      <div>
+        <div class="channel-title">巨量引擎（今日头条 / 抖音）</div>
+        <div class="channel-meta">商业开放平台 · open.oceanengine.com</div>
+      </div>
+      <div class="channel-status status-live">✅ 已支持鸿蒙</div>
+    </div>
+    <div class="channel-body">
+
+      <div class="note-box">
+        <strong>版本说明：</strong>当前推荐使用「巨量营销升级版」（v3.0），全面支持 iOS / Android / HarmonyOS 三端推广。旧版 v1.x 广告组接口同样可投放，但参数结构有差异。
+      </div>
+
+      <!-- 投放整体链路 -->
+      <div class="sub-section">
+        <div class="section-title">📌 鸿蒙投放整体链路</div>
+        <div class="flow-steps">
+          <div class="flow-step">查询/注册鸿蒙应用资产</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">创建事件管理（转化联调）</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">创建项目（Project）</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">创建广告（Promotion）</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">创建创意（Creative）</div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- 接口 1：查询鸿蒙应用列表 -->
+      <div class="sub-section">
+        <div class="section-title">① 查询鸿蒙应用列表接口</div>
+        <div class="api-block">
+          <div class="endpoint">
+            <span class="method-badge method-get">GET</span>
+            <span class="url">/open_api/v3.0/tool/harmony_app/get/</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">advertiser_id</td>
+              <td>integer</td>
+              <td><span class="tag tag-required">必填</span></td>
+              <td>广告主账号 ID</td>
+            </tr>
+            <tr>
+              <td class="field-name">app_name</td>
+              <td>string</td>
+              <td><span class="tag tag-optional">选填</span></td>
+              <td>鸿蒙应用名称，用于模糊查询筛选</td>
+            </tr>
+            <tr>
+              <td class="field-name">package_name</td>
+              <td>string</td>
+              <td><span class="tag tag-optional">选填</span></td>
+              <td>鸿蒙应用包名（如 <code>com.example.myapp</code>）</td>
+            </tr>
+            <tr>
+              <td class="field-name">page / page_size</td>
+              <td>integer</td>
+              <td><span class="tag tag-optional">选填</span></td>
+              <td>分页参数，page_size 最大 100</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="note-box">返回字段 <strong>app_id</strong> 即为鸿蒙应用在巨量平台的唯一标识，后续创建项目时使用。</div>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- 接口 2：创建项目 -->
+      <div class="sub-section">
+        <div class="section-title">② 创建项目（Project）接口 <span class="version-badge">v3.0</span></div>
+        <div class="api-block">
+          <div class="endpoint">
+            <span class="method-badge">POST</span>
+            <span class="url">/open_api/v3.0/project/create/</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>类型</th><th>枚举值 / 说明</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">landing_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">APP</span>
+                <span class="enum-val">LINK</span>
+                <span class="enum-val">MICRO_GAME</span>
+                ...
+              </td>
+              <td>推广目标。投放鸿蒙 APP 下载固定填 <strong>APP</strong></td>
+            </tr>
+            <tr>
+              <td class="field-name">app_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">HARMONYOS</span>
+                <span class="enum-val">ANDROID</span>
+                <span class="enum-val">IOS</span>
+              </td>
+              <td>
+                <span class="tag tag-new">鸿蒙关键字段</span>
+                投放鸿蒙 APP 时填 <strong>HARMONYOS</strong>；系统会在项目层绑定华为应用市场的应用
+              </td>
+            </tr>
+            <tr>
+              <td class="field-name">app_id</td>
+              <td>string</td>
+              <td>鸿蒙应用在巨量平台的 app_id</td>
+              <td>通过「查询鸿蒙应用列表」接口获取</td>
+            </tr>
+            <tr>
+              <td class="field-name">download_url</td>
+              <td>string</td>
+              <td>华为应用市场下载链接</td>
+              <td>鸿蒙应用市场落地页 URL，如 <code>https://appgallery.huawei.com/app/...</code></td>
+            </tr>
+            <tr>
+              <td class="field-name">app_promotion_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">DOWNLOAD</span>
+                <span class="enum-val">LAUNCH</span>
+              </td>
+              <td>子目标：DOWNLOAD = 应用下载；LAUNCH = 应用调起。鸿蒙目前主要用 DOWNLOAD</td>
+            </tr>
+            <tr>
+              <td class="field-name">track_url</td>
+              <td>string</td>
+              <td>第三方监测链接（点击监测）</td>
+              <td>鸿蒙 APP 点击归因监测链接，支持 Adjust / AppsFlyer / 自建等</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="warn-box">
+          <strong>注意：</strong>当 <code>app_type = HARMONYOS</code> 时，以下安卓专属功能<b>不可设置</b>：深度转化归因渠道包、安卓定向「应用安装状态」等。
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- 事件管理 -->
+      <div class="sub-section">
+        <div class="section-title">③ 事件管理（转化跟踪）关键字段</div>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">asset_type</td>
+              <td><span class="enum-val highlight">HARMONY</span> / <span class="enum-val">APP</span></td>
+              <td>资产类型，鸿蒙应用选 HARMONY</td>
+            </tr>
+            <tr>
+              <td class="field-name">attribution_type</td>
+              <td><span class="enum-val">CLICK</span></td>
+              <td>目前鸿蒙支持点击归因，后续可能开放融合归因</td>
+            </tr>
+            <tr>
+              <td class="field-name">app_api_conversion_types</td>
+              <td>
+                <span class="enum-val">ACTIVATE</span>（激活）
+                <span class="enum-val">REGISTER</span>（注册）
+                <span class="enum-val">PURCHASE</span>（付费）
+                ...
+              </td>
+              <td>鸿蒙支持的回传事件类型与 Android 基本一致</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 定向 -->
+      <div class="sub-section">
+        <div class="section-title">④ 定向参数（受众定向）</div>
+        <div class="note-box">
+          鸿蒙应用投放时，系统会自动将受众圈定在持有鸿蒙设备的用户。如需进一步精细化定向，可配合以下字段：
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">device_type</td>
+              <td><span class="enum-val highlight">PHONE</span> <span class="enum-val">PAD</span></td>
+              <td>设备类型定向</td>
+            </tr>
+            <tr>
+              <td class="field-name">os_type（audience 下）</td>
+              <td><span class="enum-val highlight">HARMONYOS</span> <span class="enum-val">ANDROID</span> <span class="enum-val">IOS</span></td>
+              <td>操作系统定向，可指定仅投鸿蒙设备</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 腾讯广告 ===== -->
+  <div id="tencent" class="channel-card ch-tencent">
+    <div class="channel-header">
+      <div class="channel-icon" style="background:rgba(255,255,255,0.2)">🐧</div>
+      <div>
+        <div class="channel-title">腾讯广告（广点通 / 优量汇）</div>
+        <div class="channel-meta">腾讯广告开放平台 · developers.e.qq.com</div>
+      </div>
+      <div class="channel-status status-live">✅ 已支持鸿蒙</div>
+    </div>
+    <div class="channel-body">
+
+      <div class="note-box">
+        <strong>版本说明：</strong>腾讯广告分为旧版 <b>Marketing API v1.1</b>（campaign/adgroup/ad/adcreative 4层）和新版 <b>Marketing API v3.0</b>（adgroup/dynamic_creative 2层）。新版 v3.0 对鸿蒙适配更全面，<b>强烈建议使用 v3.0</b>。
+      </div>
+
+      <hr class="divider" />
+
+      <!-- v3.0 核心接口 -->
+      <div class="sub-section">
+        <div class="section-title">① 创建广告组接口（新版 v3.0）<span class="version-badge">v3.0</span></div>
+        <div class="api-block">
+          <div class="endpoint">
+            <span class="method-badge">POST</span>
+            <span class="url">https://api.e.qq.com/v3.0/adgroups/add</span>
+          </div>
+        </div>
+
+        <p style="margin:14px 0 10px;font-weight:600;color:#2d4060;">🔑 营销内容核心字段（鸿蒙 APP 下载）</p>
+        <table>
+          <thead><tr><th>字段名</th><th>类型</th><th>枚举值（鸿蒙相关）</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">marketing_goal</td>
+              <td>enum</td>
+              <td><span class="enum-val highlight">MARKETING_GOAL_USER_GROWTH</span></td>
+              <td>营销目的：用户增长（APP 拉新必选）</td>
+            </tr>
+            <tr>
+              <td class="field-name">marketing_sub_goal</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">MARKETING_SUB_GOAL_APP_ACQUISITION</span>
+                <span class="enum-val">MARKETING_SUB_GOAL_APP_ACTIVATION</span>
+              </td>
+              <td>二级营销目的：应用拉新 / 应用拉活</td>
+            </tr>
+            <tr>
+              <td class="field-name">marketing_carrier_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">MARKETING_CARRIER_TYPE_APP_HARMONY</span>
+                <span class="enum-val">MARKETING_CARRIER_TYPE_APP_ANDROID</span>
+                <span class="enum-val">MARKETING_CARRIER_TYPE_APP_IOS</span>
+              </td>
+              <td>
+                <span class="tag tag-new">鸿蒙关键字段</span>
+                营销载体类型，投放鸿蒙 APP 选此值
+              </td>
+            </tr>
+            <tr>
+              <td class="field-name">marketing_target_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">MARKETING_TARGET_TYPE_APP_HARMONY</span>
+                <span class="enum-val">MARKETING_TARGET_TYPE_APP_ANDROID</span>
+                <span class="enum-val">MARKETING_TARGET_TYPE_APP_IOS</span>
+              </td>
+              <td>推广内容资产类型，鸿蒙 APP 选此值</td>
+            </tr>
+            <tr>
+              <td class="field-name">marketing_asset_outer_spec<br/>（子字段 app_harmony_spec）</td>
+              <td>struct</td>
+              <td>见下方子字段</td>
+              <td>鸿蒙 APP 通用类资产，通过此 spec 直接在广告组中表达</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <details style="margin:12px 0">
+          <summary>app_harmony_spec 子字段展开</summary>
+          <table>
+            <thead><tr><th>子字段</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="field-name">app_harmony_id</td>
+                <td>string</td>
+                <td>鸿蒙应用 ID（华为 AppGallery 应用唯一标识）</td>
+              </tr>
+              <tr>
+                <td class="field-name">package_name</td>
+                <td>string</td>
+                <td>应用包名，如 <code>com.example.myapp</code></td>
+              </tr>
+              <tr>
+                <td class="field-name">download_url</td>
+                <td>string</td>
+                <td>华为应用市场下载页 URL</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+
+        <p style="margin:14px 0 10px;font-weight:600;color:#2d4060;">🔑 落地页与推广资产类型</p>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">page_type</td>
+              <td><span class="enum-val highlight">PAGE_TYPE_APP_HARMONY</span></td>
+              <td>落地页类型：鸿蒙 AppStore 下载页</td>
+            </tr>
+            <tr>
+              <td class="field-name">promoted_asset_type</td>
+              <td><span class="enum-val highlight">PROMOTED_ASSET_TYPE_APP_HARMONY</span></td>
+              <td>推广资产类型：鸿蒙应用</td>
+            </tr>
+            <tr>
+              <td class="field-name">promoted_asset_attr_key</td>
+              <td><span class="enum-val highlight">PROMOTED_ASSET_ATTR_KEY_APP_HARMONY_ID</span></td>
+              <td>资产属性键：鸿蒙应用 ID</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="margin:14px 0 10px;font-weight:600;color:#2d4060;">🔑 转化与数据源</p>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">conversion_scene</td>
+              <td><span class="enum-val highlight">CONVERSION_SCENE_HARMONY</span></td>
+              <td>转化场景：鸿蒙转化</td>
+            </tr>
+            <tr>
+              <td class="field-name">data_source_type（数据源类型）</td>
+              <td><span class="enum-val highlight">HARMONY</span></td>
+              <td>数据源：鸿蒙（用于转化数据回传）</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="margin:14px 0 10px;font-weight:600;color:#2d4060;">🔑 操作系统定向</p>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">user_os（audience 下）</td>
+              <td><span class="enum-val highlight">HARMONY</span></td>
+              <td>操作系统版本定向：圈选鸿蒙系统用户</td>
+            </tr>
+            <tr>
+              <td class="field-name">excluded_user_os</td>
+              <td><span class="enum-val">ANDROID_PURE_MODE</span>（鸿蒙纯净版）</td>
+              <td>排除操作系统，可排除鸿蒙纯净版（仅保留鸿蒙老版本用户等）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- 旧版 v1.1 说明 -->
+      <div class="sub-section">
+        <div class="section-title">② 旧版 v1.1 接口说明 <span class="version-badge">v1.1</span></div>
+        <div class="warn-box">
+          <strong>注意：</strong>Marketing API v1.1 的 <code>promoted_objects/add</code> 接口中，<code>promoted_object_type</code> 枚举目前<b>尚未包含独立的 HARMONY 枚举值</b>（截至本文档整理时，仍为 ANDROID / IOS / MYAPP 等），鸿蒙应用推广能力在 v1.1 版本下需联系腾讯广告商务确认白名单开放状态，<b>建议直接迁移至 v3.0</b>。
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>当前枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">promoted_object_type</td>
+              <td>
+                <span class="enum-val">PROMOTED_OBJECT_TYPE_APP_ANDROID</span>
+                <span class="enum-val">PROMOTED_OBJECT_TYPE_APP_IOS</span>
+                <span class="enum-val">PROMOTED_OBJECT_TYPE_APP_ANDROID_MYAPP</span>
+                <span class="enum-val">PROMOTED_OBJECT_TYPE_APP_QUICK_APP</span>
+              </td>
+              <td>v1.1 尚无独立 HARMONY 枚举，鸿蒙能力依赖 v3.0 或白名单</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 快手 ===== -->
+  <div id="kuaishou" class="channel-card ch-kuaishou">
+    <div class="channel-header">
+      <div class="channel-icon" style="background:rgba(255,255,255,0.2)">⚡</div>
+      <div>
+        <div class="channel-title">磁力引擎（快手）</div>
+        <div class="channel-meta">快手磁力引擎开放平台 · developers.e.kuaishou.com</div>
+      </div>
+      <div class="channel-status status-live">✅ 已支持鸿蒙</div>
+    </div>
+    <div class="channel-body">
+
+      <div class="note-box">
+        <strong>版本说明：</strong>快手 MAPI 当前主要版本为 v2.0，广告层级为「广告计划 → 广告单元（Ad Unit）→ 广告创意」三层。鸿蒙应用推广通过广告单元层的 <code>app_type</code> 字段指定。
+      </div>
+
+      <hr class="divider" />
+
+      <div class="sub-section">
+        <div class="section-title">① 广告单元创建接口</div>
+        <div class="api-block">
+          <div class="endpoint">
+            <span class="method-badge">POST</span>
+            <span class="url">/rest/openapi/v2/ad_unit/create</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>类型</th><th>枚举值（鸿蒙相关）</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">app_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">HARMONYOS</span>
+                <span class="enum-val">ANDROID</span>
+                <span class="enum-val">IOS</span>
+              </td>
+              <td>
+                <span class="tag tag-new">鸿蒙关键字段</span>
+                应用平台类型，鸿蒙 APP 下载选 <strong>HARMONYOS</strong>
+              </td>
+            </tr>
+            <tr>
+              <td class="field-name">scene_id</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">APP_DOWNLOAD</span>
+              </td>
+              <td>营销目标/场景，APP 下载场景</td>
+            </tr>
+            <tr>
+              <td class="field-name">download_url</td>
+              <td>string</td>
+              <td>华为应用市场 AppGallery 链接</td>
+              <td>鸿蒙 APP 的华为应用市场下载链接，必填</td>
+            </tr>
+            <tr>
+              <td class="field-name">app_id</td>
+              <td>string</td>
+              <td>快手平台应用 ID（鸿蒙应用预先注册）</td>
+              <td>需在快手广告后台「资产 → 应用管理」中提前注册鸿蒙应用并获取</td>
+            </tr>
+            <tr>
+              <td class="field-name">package_name</td>
+              <td>string</td>
+              <td>鸿蒙应用包名</td>
+              <td>如 <code>com.example.myapp</code></td>
+            </tr>
+            <tr>
+              <td class="field-name">click_track_url</td>
+              <td>string</td>
+              <td>第三方点击监测链接</td>
+              <td>鸿蒙 APP 归因监测链接</td>
+            </tr>
+            <tr>
+              <td class="field-name">impression_track_url</td>
+              <td>string</td>
+              <td>第三方曝光监测链接</td>
+              <td>可选</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="sub-section">
+        <div class="section-title">② 广告单元更新接口</div>
+        <div class="api-block">
+          <div class="endpoint">
+            <span class="method-badge">POST</span>
+            <span class="url">/rest/openapi/v2/ad_unit/update</span>
+          </div>
+        </div>
+        <p style="font-size:13px;color:#4a6080;margin-top:8px;">字段结构与创建接口一致，通过 <code>unit_id</code> 指定要更新的广告单元。</p>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="sub-section">
+        <div class="section-title">③ 广告计划（Campaign）层关键设置</div>
+        <div class="api-block">
+          <div class="endpoint">
+            <span class="method-badge">POST</span>
+            <span class="url">/rest/openapi/v2/campaign/create</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">marketing_goal</td>
+              <td><span class="enum-val highlight">APP_PROMOTION</span></td>
+              <td>营销目标：APP 推广，投放鸿蒙 APP 下载必选</td>
+            </tr>
+            <tr>
+              <td class="field-name">app_os</td>
+              <td>
+                <span class="enum-val highlight">HARMONYOS</span>
+                <span class="enum-val">ANDROID</span>
+                <span class="enum-val">IOS</span>
+              </td>
+              <td>计划层应用操作系统类型，需与广告单元 app_type 一致</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="sub-section">
+        <div class="section-title">④ 转化归因配置</div>
+        <div class="note-box">
+          快手鸿蒙 APP 投放需在快手广告后台完成：<b>应用注册（HarmonyOS）→ 转化事件配置 → 联调验证</b>，再通过 MAPI 引用已联调的 <code>conversion_id</code>。
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值/说明</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">conversion_id</td>
+              <td>integer，后台获取</td>
+              <td>已联调的鸿蒙转化 ID，在广告单元中引用</td>
+            </tr>
+            <tr>
+              <td class="field-name">deep_conversion_type</td>
+              <td>
+                <span class="enum-val">RETENTION</span>（次留）
+                <span class="enum-val">IN_APP_ACTION</span>（深度行为）
+              </td>
+              <td>鸿蒙 APP 支持深度转化目标（根据开放进度）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 百度 ===== -->
+  <div id="baidu" class="channel-card ch-baidu">
+    <div class="channel-header">
+      <div class="channel-icon" style="background:rgba(255,255,255,0.2)">🔍</div>
+      <div>
+        <div class="channel-title">百度百青藤（百度信息流）</div>
+        <div class="channel-meta">百度商业开发者中心 · dev2.baidu.com</div>
+      </div>
+      <div class="channel-status status-live">✅ 2026-05 起支持</div>
+    </div>
+    <div class="channel-body">
+
+      <div class="note-box">
+        <strong>版本说明：</strong>百度信息流广告（含百青藤联盟流量）于 <b>2026年5月13日</b>全面打通鸿蒙应用推广通路，支持鸿蒙 APP 下载链路投放。MAPI 接口结构为「项目（Project）→ 方案（Plan）→ 单元（Unit）→ 创意（Creative）」四层。
+      </div>
+
+      <hr class="divider" />
+
+      <div class="sub-section">
+        <div class="section-title">① 转化事件资产创建（前置必要步骤）</div>
+        <div class="info-box">
+          投放鸿蒙 APP 前，需先在百度推广平台<b>资产中心 → 事件管理</b>中创建鸿蒙 APP 转化资产，或通过 MAPI 转化追踪接口创建。
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值（鸿蒙相关）</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">asset_type</td>
+              <td><span class="enum-val highlight">APP</span></td>
+              <td>资产类型：APP（应用 APP）</td>
+            </tr>
+            <tr>
+              <td class="field-name">os_type</td>
+              <td>
+                <span class="enum-val highlight">HARMONYOS</span>
+                <span class="enum-val">ANDROID</span>
+                <span class="enum-val">IOS</span>
+              </td>
+              <td>
+                <span class="tag tag-new">鸿蒙关键字段</span>
+                应用类型，投放鸿蒙选 <strong>HARMONYOS</strong>
+              </td>
+            </tr>
+            <tr>
+              <td class="field-name">download_type</td>
+              <td>
+                <span class="enum-val highlight">DOWNLOAD</span>（需用户下载）
+                <span class="enum-val">LAUNCH</span>（应用调起）
+              </td>
+              <td>下载方式，鸿蒙 APP 新增获客选 DOWNLOAD</td>
+            </tr>
+            <tr>
+              <td class="field-name">download_url</td>
+              <td>华为应用市场下载链接</td>
+              <td>鸿蒙 APP 的 AppGallery 下载链接（用于转化联调验证）</td>
+            </tr>
+            <tr>
+              <td class="field-name">channel</td>
+              <td>
+                <span class="enum-val">BAIDU_SEARCH</span>（百度搜索广告）
+                <span class="enum-val">BAIDU_FEED</span>（百度信息流/百青藤）
+              </td>
+              <td>适用渠道，可同时绑定多个渠道</td>
+            </tr>
+            <tr>
+              <td class="field-name">track_click_url</td>
+              <td>点击监测 URL</td>
+              <td>用于鸿蒙 APP 点击归因（接入方式：应用 API）</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="note-box" style="margin-top:14px">
+          <strong>转化事件支持列表（鸿蒙 APP）：</strong>
+          激活（4）、留线索（18）、关键页面浏览（20）、注册（25）、付费（26）、客户自定义（27）、次日留存（28）、授信（42）、商品下单（45）、深度使用（52）、应用调起（71）、付费观剧（118）
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="sub-section">
+        <div class="section-title">② 广告单元（Unit）创建接口 — 应用下载</div>
+        <div class="api-block">
+          <div class="endpoint">
+            <span class="method-badge">POST</span>
+            <span class="url">/api/adunit/create</span>
+            &nbsp;<span style="color:#7a8ba0;font-size:12px">（百度信息流 Feed API）</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>字段名</th><th>类型</th><th>枚举值（鸿蒙相关）</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">unit_type</td>
+              <td>enum</td>
+              <td><span class="enum-val highlight">APP_DOWNLOAD</span></td>
+              <td>单元类型：APP 下载（含鸿蒙）</td>
+            </tr>
+            <tr>
+              <td class="field-name">app_os_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">HARMONYOS</span>
+                <span class="enum-val">ANDROID</span>
+                <span class="enum-val">IOS</span>
+              </td>
+              <td>
+                <span class="tag tag-new">鸿蒙关键字段</span>
+                操作系统类型，投放鸿蒙选 <strong>HARMONYOS</strong>
+              </td>
+            </tr>
+            <tr>
+              <td class="field-name">app_download_url</td>
+              <td>string</td>
+              <td>华为应用市场下载链接</td>
+              <td>鸿蒙 APP 的 AppGallery 链接</td>
+            </tr>
+            <tr>
+              <td class="field-name">app_package_name</td>
+              <td>string</td>
+              <td>应用包名</td>
+              <td>鸿蒙 APP 包名，如 <code>com.example.myapp</code></td>
+            </tr>
+            <tr>
+              <td class="field-name">conversion_id</td>
+              <td>integer</td>
+              <td>已创建的转化 ID</td>
+              <td>关联前置步骤中创建的鸿蒙 APP 转化资产 ID</td>
+            </tr>
+            <tr>
+              <td class="field-name">bid_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val">OCPC</span>（目标转化出价）
+                <span class="enum-val">OCPM</span>
+                <span class="enum-val">CPM</span>
+                <span class="enum-val">CPC</span>
+              </td>
+              <td>出价方式，推荐 OCPC 优化激活成本</td>
+            </tr>
+            <tr>
+              <td class="field-name">target_conversion_type</td>
+              <td>enum</td>
+              <td>
+                <span class="enum-val highlight">ACTIVATE</span>（激活）
+                <span class="enum-val">REGISTER</span>（注册）
+                <span class="enum-val">PURCHASE</span>（付费）
+              </td>
+              <td>优化目标的转化类型</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="sub-section">
+        <div class="section-title">③ 定向参数（受众定向）</div>
+        <table>
+          <thead><tr><th>字段名</th><th>枚举值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="field-name">os_type（targeting 下）</td>
+              <td>
+                <span class="enum-val highlight">HARMONYOS</span>
+                <span class="enum-val">ANDROID</span>
+                <span class="enum-val">IOS</span>
+              </td>
+              <td>操作系统定向，可限定仅投给鸿蒙设备用户</td>
+            </tr>
+            <tr>
+              <td class="field-name">device_brand</td>
+              <td>
+                <span class="enum-val highlight">HUAWEI</span>
+                <span class="enum-val">HONOR</span>
+                ...
+              </td>
+              <td>品牌定向，可配合圈选华为/荣耀品牌（鸿蒙设备用户）</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="warn-box">
+        <strong>联调说明：</strong>百度鸿蒙投放目前仅支持「应用 API」接入方式回传转化数据，短期内可通过加白申请跳过联调（联调状态显示「无需联调」）。长期需通过转化中心提供的鸿蒙系统转化数据联调能力完成验证。
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 附录：整体对比 -->
+  <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:28px;margin-bottom:36px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+    <div style="font-size:17px;font-weight:700;color:#1d2a3a;margin-bottom:18px">📊 四大渠道鸿蒙投放 MAPI 核心字段对比</div>
+    <table>
+      <thead>
+        <tr>
+          <th>对比维度</th>
+          <th>🎵 巨量引擎</th>
+          <th>🐧 腾讯广告</th>
+          <th>⚡ 磁力引擎</th>
+          <th>🔍 百度百青藤</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>API 版本</strong></td>
+          <td>巨量营销升级版 v3.0</td>
+          <td>MKTAPI v3.0（推荐） / v1.1</td>
+          <td>快手 MAPI v2.0</td>
+          <td>百度 Feed API</td>
+        </tr>
+        <tr>
+          <td><strong>鸿蒙字段</strong></td>
+          <td><code class="field-name">app_type = HARMONYOS</code></td>
+          <td><code class="field-name">marketing_carrier_type = MARKETING_CARRIER_TYPE_APP_HARMONY</code></td>
+          <td><code class="field-name">app_type = HARMONYOS</code></td>
+          <td><code class="field-name">app_os_type = HARMONYOS</code></td>
+        </tr>
+        <tr>
+          <td><strong>应用 ID 字段</strong></td>
+          <td><code class="field-name">app_id</code>（巨量内部 ID）</td>
+          <td><code class="field-name">app_harmony_id</code>（AppGallery ID）</td>
+          <td><code class="field-name">app_id</code>（快手注册 ID）</td>
+          <td><code class="field-name">app_package_name</code> + 转化 ID</td>
+        </tr>
+        <tr>
+          <td><strong>下载链接字段</strong></td>
+          <td><code class="field-name">download_url</code></td>
+          <td><code class="field-name">download_url</code>（spec 子字段）</td>
+          <td><code class="field-name">download_url</code></td>
+          <td><code class="field-name">app_download_url</code></td>
+        </tr>
+        <tr>
+          <td><strong>落地页类型</strong></td>
+          <td>自动（华为应用市场）</td>
+          <td><code class="field-name">PAGE_TYPE_APP_HARMONY</code></td>
+          <td>自动（华为应用市场）</td>
+          <td>自动（华为应用市场）</td>
+        </tr>
+        <tr>
+          <td><strong>操作系统定向</strong></td>
+          <td><code class="field-name">os_type = HARMONYOS</code></td>
+          <td><code class="field-name">user_os = HARMONY</code></td>
+          <td><code class="field-name">app_os = HARMONYOS</code>（计划层）</td>
+          <td><code class="field-name">os_type = HARMONYOS</code>（定向层）</td>
+        </tr>
+        <tr>
+          <td><strong>转化事件</strong></td>
+          <td>事件管理（新接口）</td>
+          <td><code class="field-name">CONVERSION_SCENE_HARMONY</code></td>
+          <td><code class="field-name">conversion_id</code>（引用）</td>
+          <td><code class="field-name">conversion_id</code>（引用）</td>
+        </tr>
+        <tr>
+          <td><strong>支持时间</strong></td>
+          <td>2024年（已成熟）</td>
+          <td>2024年 v3.0（已成熟）</td>
+          <td>2024-2025年（已成熟）</td>
+          <td>2026年5月（新上线）</td>
+        </tr>
+        <tr>
+          <td><strong>应用资产注册</strong></td>
+          <td>需在巨量后台注册鸿蒙应用</td>
+          <td>需在腾讯广告后台创建鸿蒙资产</td>
+          <td>需在快手后台注册鸿蒙应用</td>
+          <td>需在百度资产中心创建 HarmonyOS 转化资产</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 通用注意事项 -->
+  <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:28px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+    <div style="font-size:17px;font-weight:700;color:#1d2a3a;margin-bottom:16px">⚠️ 通用注意事项</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="note-box" style="margin:0">
+        <strong>1. 应用市场链接：</strong>鸿蒙 APP 下载链接须为华为 AppGallery 应用市场链接，格式通常为：<br/>
+        <code>https://appgallery.huawei.com/app/C&lt;appid&gt;</code>
+      </div>
+      <div class="note-box" style="margin:0">
+        <strong>2. OAID 归因：</strong>鸿蒙 NEXT 系统不支持 IMEI/AndroidID，归因设备标识使用 <b>OAID</b>（鸿蒙设备广告 ID），接入各平台 SDK 时需适配鸿蒙 OAID 获取方式。
+      </div>
+      <div class="note-box" style="margin:0">
+        <strong>3. 深度转化：</strong>部分平台（如巨量引擎）鸿蒙 APP 暂不支持某些安卓专属深度转化能力，以实际 MAPI 错误提示为准。
+      </div>
+      <div class="note-box" style="margin:0">
+        <strong>4. 转化联调：</strong>所有平台均要求在正式上线前完成鸿蒙 APP 转化数据联调，需使用搭载鸿蒙 NEXT（HarmonyOS 5.0+）的华为/荣耀设备进行验证。
+      </div>
+      <div class="note-box" style="margin:0">
+        <strong>5. 流量规模：</strong>目前各平台鸿蒙流量体量仍在增长阶段，建议同时保留 Android 计划跑量，鸿蒙单独建计划便于分析效果。
+      </div>
+      <div class="note-box" style="margin:0">
+        <strong>6. 回传方式：</strong>各平台鸿蒙投放均主要支持「应用 API 回传」方式，即广告主服务端主动上报转化事件，不依赖 SDK 自动上报。
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;color:#8aa0c0;font-size:12px;margin-top:32px;padding-bottom:20px">
+    本文档基于各平台公开 MAPI 文档整理，字段枚举以官方最新文档为准。建议定期查阅各平台开放平台更新日志。
+  </div>
+
+</div>
+</body>
+</html>

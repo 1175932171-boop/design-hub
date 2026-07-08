@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 20px; background: #fff; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<svg width="980" height="1340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ah-danger" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#dc2626" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ah-warn" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#ca8a04" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ah-success" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#16a34a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="ah-purple" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M1,1 L6.5,3.5 L1,6" fill="none" stroke="#7c3aed" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect width="980" height="1340" fill="#f9fafb"/>
+  <text x="490" y="30" text-anchor="middle" fill="#111827" font-size="15" font-weight="700">信息流广告预算智能分配系统 — 决策流程图（规则约束层修订版）</text>
+
+  <!-- 区块背景 -->
+  <rect x="22" y="46" width="936" height="284" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text x="42" y="65" fill="#1d4ed8" font-size="11" font-weight="700">数据准备</text>
+
+  <rect x="22" y="340" width="936" height="430" rx="10" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="1.5"/>
+  <text x="42" y="359" fill="#6d28d9" font-size="11" font-weight="700">两级预算优化 &amp; 规则约束层（修订版）</text>
+
+  <rect x="22" y="780" width="936" height="262" rx="10" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+  <text x="42" y="799" fill="#92400e" font-size="11" font-weight="700">花费预估 &amp; 校验调整</text>
+
+  <rect x="22" y="1052" width="936" height="228" rx="10" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text x="42" y="1071" fill="#166534" font-size="11" font-weight="700">执行输出</text>
+
+  <!-- ===== 节点1: 触发 ===== -->
+  <rect x="370" y="68" width="240" height="36" rx="18" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.8"/>
+  <text x="490" y="86" text-anchor="middle" dominant-baseline="middle" fill="#1e1b4b" font-size="13" font-weight="700">T+1 凌晨 · 调度触发</text>
+  <path d="M490,104 L490,122" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 节点2: 数据采集 ===== -->
+  <rect x="280" y="122" width="420" height="38" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="490" y="141" text-anchor="middle" dominant-baseline="middle" fill="#1e3a8a" font-size="12" font-weight="500">数据采集（1/3/7日消耗 · 转化数 · 渠道ROI · 分时流量 · 账户η历史）</text>
+  <path d="M490,160 L490,180" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 节点3: 预算约束 ===== -->
+  <rect x="380" y="180" width="220" height="36" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="490" y="198" text-anchor="middle" dominant-baseline="middle" fill="#1e3a8a" font-size="12" font-weight="500">预算约束生成 [B_min, B_max]</text>
+  <rect x="22" y="178" width="240" height="46" rx="5" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+  <text x="142" y="196" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="11">B_min = max(P10, 3日均值×0.5)</text>
+  <text x="142" y="214" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="11">B_max = min(3日最大×1.5, 7日最大×1.2)</text>
+  <path d="M262,201 L380,201" stroke="#9ca3af" stroke-width="1" fill="none" marker-end="url(#ah)"/>
+  <path d="M490,216 L490,236" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 节点4: S曲线拟合 ===== -->
+  <rect x="380" y="236" width="220" height="36" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="490" y="254" text-anchor="middle" dominant-baseline="middle" fill="#1e3a8a" font-size="12" font-weight="500">S 曲线参数拟合（L, r, B₀）</text>
+  <rect x="22" y="238" width="240" height="28" rx="5" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+  <text x="142" y="252" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="11">近30日 日预算→转化 + 日预算→实消 LM拟合</text>
+  <path d="M262,252 L380,252" stroke="#9ca3af" stroke-width="1" fill="none" marker-end="url(#ah)"/>
+  <rect x="620" y="238" width="298" height="28" rx="5" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+  <text x="769" y="252" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="11">Conv_a(B) 转化曲线 + S_a(B) 花费能力曲线</text>
+  <path d="M600,252 L620,252" stroke="#9ca3af" stroke-width="1" fill="none" marker-end="url(#ah)"/>
+  <path d="M490,272 L490,368" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="6 3" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 节点5: 渠道级分配 ===== -->
+  <rect x="360" y="368" width="260" height="36" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="490" y="386" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="12" font-weight="600">渠道级预算分配（全局二分迭代）</text>
+  <rect x="640" y="368" width="298" height="36" rx="5" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+  <text x="789" y="383" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="11">等边际效率：ME_c(B_c*) = λ</text>
+  <text x="789" y="397" text-anchor="middle" dominant-baseline="middle" fill="#6b7280" font-size="10">【规则二】出价固定，仅调预算</text>
+  <path d="M620,386 L640,386" stroke="#9ca3af" stroke-width="1" fill="none" marker-end="url(#ah)"/>
+  <path d="M490,404 L490,428" stroke="#7c3aed" stroke-width="1.5" fill="none" marker-end="url(#ah-purple)"/>
+
+  <!-- ===== 节点6: 账户级一次分配 ===== -->
+  <rect x="360" y="428" width="260" height="36" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="490" y="442" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="12" font-weight="600">账户级预算分配（第一轮等边际效率）</text>
+  <text x="490" y="457" text-anchor="middle" dominant-baseline="middle" fill="#6d28d9" font-size="10">输出 B_a_proposed（各账户理论分配值）</text>
+  <path d="M490,464 L490,488" stroke="#7c3aed" stroke-width="1.5" fill="none" marker-end="url(#ah-purple)"/>
+
+  <!-- ===== 节点7: 规则一批量筛查（矩形流程框，不用菱形）===== -->
+  <rect x="310" y="488" width="360" height="66" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+  <text x="490" y="507" text-anchor="middle" dominant-baseline="middle" fill="#78350f" font-size="12" font-weight="700">【规则一】批量筛查（每账户独立执行）</text>
+  <text x="490" y="523" text-anchor="middle" dominant-baseline="middle" fill="#92400e" font-size="11">① 触发：η_a &lt; 0.8 × η_P50_c（历史7日P50）</text>
+  <text x="490" y="540" text-anchor="middle" dominant-baseline="middle" fill="#92400e" font-size="11">② 判据：η_interval_a = ΔS_a/ΔB &gt; η_P50_c</text>
+  <!-- 左注释 -->
+  <rect x="22" y="492" width="240" height="52" rx="5" fill="#fef9c3" stroke="#d97706" stroke-width="1"/>
+  <text x="142" y="509" text-anchor="middle" dominant-baseline="middle" fill="#78350f" font-size="10.5" font-weight="600">基准修订：η_P50_c = P50(渠道7日日消耗率)</text>
+  <text x="142" y="526" text-anchor="middle" dominant-baseline="middle" fill="#78350f" font-size="10">固定参照系，不受当日低效账户拖累</text>
+  <text x="142" y="541" text-anchor="middle" dominant-baseline="middle" fill="#92400e" font-size="10">替代原有动态均值 η̄_c</text>
+  <path d="M262,518 L310,518" stroke="#d97706" stroke-width="1" fill="none" stroke-dasharray="4 2"/>
+  <!-- 右注释 -->
+  <rect x="688" y="492" width="270" height="52" rx="5" fill="#fef9c3" stroke="#d97706" stroke-width="1"/>
+  <text x="823" y="509" text-anchor="middle" dominant-baseline="middle" fill="#78350f" font-size="10.5" font-weight="600">判据修订：区间平均消耗率测试</text>
+  <text x="823" y="526" text-anchor="middle" dominant-baseline="middle" fill="#78350f" font-size="10">ΔB = B_proposed − B_current</text>
+  <text x="823" y="541" text-anchor="middle" dominant-baseline="middle" fill="#92400e" font-size="10">替代原有一阶导数点估计</text>
+  <path d="M670,518 L688,518" stroke="#d97706" stroke-width="1" fill="none" stroke-dasharray="4 2"/>
+  <path d="M490,554 L490,574" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 节点8: 锁定与回收 ===== -->
+  <rect x="310" y="574" width="360" height="60" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+  <text x="490" y="592" text-anchor="middle" dominant-baseline="middle" fill="#3b0764" font-size="12" font-weight="700">预算回收 &amp; 合格账户二次等边际分配</text>
+  <text x="490" y="608" text-anchor="middle" dominant-baseline="middle" fill="#5b21b6" font-size="11">锁定账户：B_final = B_current（不变）</text>
+  <text x="490" y="624" text-anchor="middle" dominant-baseline="middle" fill="#5b21b6" font-size="11">B_remaining = B_ch − Σ B_current(锁定) → 合格账户重分配</text>
+  <!-- 右注释 -->
+  <rect x="688" y="576" width="270" height="52" rx="5" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+  <text x="823" y="592" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="10.5" font-weight="600">合格账户 = 正常账户 + 受限但通过账户</text>
+  <text x="823" y="608" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="10">使用相同等边际效率二分法，总预算 = B_remaining</text>
+  <text x="823" y="623" text-anchor="middle" dominant-baseline="middle" fill="#16a34a" font-size="10">渠道总预算 B_ch 保持不变，无预算浪费</text>
+  <path d="M670,602 L688,602" stroke="#9ca3af" stroke-width="1" fill="none" marker-end="url(#ah)"/>
+  <!-- 跨区块虚线 -->
+  <path d="M490,634 L490,808" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="6 3" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 节点9: 花费预估 ===== -->
+  <rect x="380" y="808" width="220" height="40" rx="6" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="490" y="823" text-anchor="middle" dominant-baseline="middle" fill="#713f12" font-size="12" font-weight="500">花费预估服务</text>
+  <text x="490" y="839" text-anchor="middle" dominant-baseline="middle" fill="#92400e" font-size="11">预估实消 Ŝ_a(t)</text>
+  <rect x="622" y="810" width="298" height="36" rx="5" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+  <text x="771" y="824" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="11" font-weight="500">Ŝ_a(t) = B_a × η_a_base × T_c(t) × γ(t) × β_a</text>
+  <text x="771" y="839" text-anchor="middle" dominant-baseline="middle" fill="#6b7280" font-size="10">【规则三】T_c(t) 分时流量修正 | 仅校验执行可行性</text>
+  <path d="M600,828 L622,828" stroke="#9ca3af" stroke-width="1" fill="none" marker-end="url(#ah)"/>
+  <path d="M490,848 L490,864" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 菱形D1: 消耗不足 ===== -->
+  <polygon points="490,864 600,892 490,920 380,892" fill="#fffbeb" stroke="#ca8a04" stroke-width="1.8"/>
+  <text x="490" y="888" text-anchor="middle" dominant-baseline="middle" fill="#713f12" font-size="11.5" font-weight="700">Ŝ_a &lt; 0.8 × B_a ?</text>
+  <text x="490" y="903" text-anchor="middle" dominant-baseline="middle" fill="#92400e" font-size="10">消耗不足（执行可行性）</text>
+  <path d="M600,892 L630,892" stroke="#ca8a04" stroke-width="1.5" fill="none" marker-end="url(#ah-warn)"/>
+  <text x="612" y="885" text-anchor="middle" fill="#92400e" font-size="11" font-weight="700">是</text>
+  <rect x="630" y="878" width="250" height="28" rx="5" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="755" y="892" text-anchor="middle" dominant-baseline="middle" fill="#713f12" font-size="11">预算上移 → 释放至合格高效账户</text>
+  <path d="M755,906 L755,1032 L490,1032" stroke="#ca8a04" stroke-width="1.2" stroke-dasharray="5 3" fill="none" marker-end="url(#ah-warn)"/>
+  <path d="M490,920 L490,944" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+  <text x="505" y="935" fill="#374151" font-size="11" font-weight="600">否</text>
+
+  <!-- ===== 菱形D2: 超消风险 ===== -->
+  <polygon points="490,944 600,972 490,1000 380,972" fill="#fef2f2" stroke="#dc2626" stroke-width="1.8"/>
+  <text x="490" y="968" text-anchor="middle" dominant-baseline="middle" fill="#7f1d1d" font-size="11.5" font-weight="700">Ŝ_a &gt; B_a ?</text>
+  <text x="490" y="983" text-anchor="middle" dominant-baseline="middle" fill="#dc2626" font-size="10">超消风险（执行可行性）</text>
+  <path d="M600,972 L630,972" stroke="#dc2626" stroke-width="1.5" fill="none" marker-end="url(#ah-danger)"/>
+  <text x="612" y="965" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="700">是</text>
+  <rect x="630" y="958" width="250" height="28" rx="5" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="755" y="972" text-anchor="middle" dominant-baseline="middle" fill="#7f1d1d" font-size="11">超消风险 → 截断至 B_a × 1.05</text>
+  <path d="M755,986 L755,1032" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="5 3" fill="none"/>
+  <path d="M490,1000 L490,1032" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ah)"/>
+  <text x="505" y="1020" fill="#374151" font-size="11" font-weight="600">否</text>
+
+  <!-- merge2 -->
+  <circle cx="490" cy="1032" r="4" fill="#6b7280"/>
+  <path d="M490,1036 L490,1070" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="6 3" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ===== 节点10: 输出 ===== -->
+  <rect x="380" y="1070" width="220" height="36" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="490" y="1088" text-anchor="middle" dominant-baseline="middle" fill="#14532d" font-size="12" font-weight="500">输出最终账户/渠道日预算</text>
+  <path d="M490,1106 L490,1126" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#ah-success)"/>
+
+  <!-- ===== 节点11: 写入 ===== -->
+  <rect x="380" y="1126" width="220" height="36" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="490" y="1144" text-anchor="middle" dominant-baseline="middle" fill="#14532d" font-size="12" font-weight="500">写入投放平台（API 推送）</text>
+  <rect x="622" y="1127" width="218" height="34" rx="5" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+  <text x="731" y="1141" text-anchor="middle" dominant-baseline="middle" fill="#374151" font-size="11">头条 · 广点通 · 快手</text>
+  <text x="731" y="1155" text-anchor="middle" dominant-baseline="middle" fill="#6b7280" font-size="10">【规则二】仅写日预算，不干预出价</text>
+  <path d="M600,1144 L622,1144" stroke="#9ca3af" stroke-width="1" fill="none" marker-end="url(#ah)"/>
+  <path d="M490,1162 L490,1182" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#ah-success)"/>
+
+  <!-- ===== 节点12: 完成 ===== -->
+  <rect x="380" y="1182" width="220" height="36" rx="18" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="490" y="1200" text-anchor="middle" dominant-baseline="middle" fill="#14532d" font-size="13" font-weight="700">完成 · 等待次日调度</text>
+
+  <!-- 分隔线 -->
+  <line x1="30" y1="1248" x2="950" y2="1248" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 4"/>
+
+  <!-- 图例 -->
+  <text x="490" y="1265" text-anchor="middle" fill="#374151" font-size="11" font-weight="700">图例</text>
+  <rect x="50" y="1275" width="12" height="10" rx="2" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/><text x="70" y="1285" fill="#374151" font-size="10.5">数据准备节点</text>
+  <rect x="185" y="1275" width="12" height="10" rx="2" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/><text x="205" y="1285" fill="#374151" font-size="10.5">优化/回收分配节点</text>
+  <rect x="340" y="1275" width="12" height="10" rx="2" fill="#fef3c7" stroke="#d97706" stroke-width="1"/><text x="360" y="1285" fill="#374151" font-size="10.5">规则一批量筛查（流程框）</text>
+  <polygon points="510,1280 518,1285 510,1290 502,1285" fill="#fffbeb" stroke="#ca8a04" stroke-width="1"/><text x="527" y="1285" fill="#374151" font-size="10.5">校验决策节点</text>
+  <rect x="650" y="1275" width="12" height="10" rx="2" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/><text x="670" y="1285" fill="#374151" font-size="10.5">执行输出节点</text>
+  <line x1="790" y1="1280" x2="820" y2="1280" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="4 3"/><text x="828" y="1285" fill="#374151" font-size="10.5">跨区块连接</text>
+
+  <!-- 底部说明 -->
+  <text x="28" y="1308" fill="#6b7280" font-size="9.5">修订点：规则一基准改为渠道7日P50（η_P50_c），第二关改为区间平均消耗率测试（η_interval_a），新增独立的"预算回收&amp;二次分配"步骤（与花费预估校验职责完全分离）</text>
+  <text x="28" y="1324" fill="#6b7280" font-size="9.5">花费预估校验：仅处理"执行可行性"（能否花出去），不处理"分配资格"（谁有权参与竞争）· 调度时间：T+1 凌晨 00:30</text>
+</svg>
+</body>
+</html>

@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天渠 RTA 架构迁移方案</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: #f1f5f9; color: #1e293b; line-height: 1.7; }
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 210px; background: #1e293b; color: #cbd5e1; padding: 24px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+.sidebar h2 { color: #f8fafc; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #334155; }
+.sidebar .group-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 6px 4px; display: block; }
+.sidebar a { display: block; color: #94a3b8; text-decoration: none; font-size: 12.5px; padding: 5px 8px; border-radius: 4px; margin-bottom: 1px; }
+.sidebar a:hover { background: #334155; color: #f1f5f9; }
+.main { flex: 1; padding: 40px 52px 60px; max-width: 960px; }
+h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+.subtitle { color: #64748b; font-size: 13px; margin-bottom: 32px; padding-bottom: 22px; border-bottom: 2px solid #e2e8f0; }
+h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 38px 0 14px; padding-left: 12px; border-left: 4px solid #3b82f6; }
+h3 { font-size: 14px; font-weight: 600; color: #334155; margin: 22px 0 9px; }
+p { margin-bottom: 12px; font-size: 13.5px; line-height: 1.85; }
+ul { margin: 0 0 12px 18px; font-size: 13.5px; line-height: 1.85; }
+li { margin-bottom: 4px; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+th { background: #f1f5f9; padding: 9px 13px; text-align: left; font-weight: 600; color: #374151; border: 1px solid #e2e8f0; }
+td { padding: 8px 13px; border: 1px solid #e2e8f0; color: #374151; vertical-align: top; }
+tr:nth-child(even) td { background: #f8fafc; }
+.callout { padding: 13px 16px; border-radius: 7px; margin: 14px 0; font-size: 13px; line-height: 1.75; }
+.cb-blue { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.cb-yellow { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.cb-green { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.cb-red { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.cb-purple { background: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6; }
+.tag { display: inline-block; background: #e0e7ff; color: #3730a3; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; margin-right: 4px; }
+.tag-g { background: #dcfce7; color: #166534; }
+.tag-y { background: #fef9c3; color: #92400e; }
+.tag-r { background: #fee2e2; color: #991b1b; }
+.tag-gray { background: #f1f5f9; color: #475569; }
+.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+.kpi-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; }
+.kpi-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.kpi-val { font-size: 22px; font-weight: 800; color: #0f172a; }
+.kpi-val.red { color: #dc2626; }
+.kpi-val.green { color: #16a34a; }
+.kpi-desc { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; }
+
+/* 架构对比图 */
+.arch-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+.arch-panel { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.arch-panel-header { padding: 10px 16px; font-size: 13px; font-weight: 700; border-bottom: 1px solid #e2e8f0; }
+.arch-panel-header.old { background: #fff7ed; color: #c2410c; }
+.arch-panel-header.new { background: #f0fdf4; color: #15803d; }
+.arch-flow { padding: 14px 16px; }
+.flow-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; font-size: 12.5px; }
+.flow-step { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.step-gray { background: #e2e8f0; color: #475569; }
+.step-blue { background: #dbeafe; color: #1d4ed8; }
+.step-green { background: #dcfce7; color: #15803d; }
+.step-orange { background: #ffedd5; color: #c2410c; }
+.flow-node { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600; margin-bottom: 2px; }
+.node-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.node-orange { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.node-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.node-green { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.node-purple { background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+.flow-arrow { text-align: center; color: #94a3b8; font-size: 12px; margin: 2px 0; }
+
+/* 系统组件图 */
+.sys-box { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin: 14px 0; }
+.sys-header { padding: 10px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: white; }
+.sys-header.blue { background: #2563eb; }
+.sys-header.slate { background: #475569; }
+.sys-header.green { background: #16a34a; }
+.sys-body { padding: 14px 16px; font-size: 13px; }
+.sys-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+.sys-item:last-child { border-bottom: none; }
+.sys-num { width: 20px; height: 20px; border-radius: 50%; background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* 实验架构 */
+.exp-container { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.exp-card { background: white; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+.exp-card-header { padding: 10px 16px; font-size: 13px; font-weight: 700; color: white; }
+.exp-card-header.biz-a { background: #2563eb; }
+.exp-card-header.biz-b { background: #7c3aed; }
+.exp-card-body { padding: 14px 16px; }
+.exp-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f8fafc; font-size: 12.5px; color: #374151; }
+.exp-item:last-child { border-bottom: none; }
+.exp-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+.dot-blue { background: #3b82f6; }
+.dot-purple { background: #8b5cf6; }
+
+/* 流程图 - 天渠内部 */
+.flow-chain { display: flex; flex-direction: column; gap: 0; margin: 16px 0; background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.flow-chain-item { display: flex; align-items: stretch; border-bottom: 1px solid #f1f5f9; }
+.flow-chain-item:last-child { border-bottom: none; }
+.fc-num { width: 40px; background: #1e293b; color: #94a3b8; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.fc-body { flex: 1; padding: 10px 14px; font-size: 13px; color: #374151; }
+.fc-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; margin-left: 8px; }
+.fc-new { background: #dbeafe; color: #1d4ed8; }
+.fc-exist { background: #dcfce7; color: #15803d; }
+
+/* 迁移时间线 */
+.timeline { margin: 16px 0; }
+.tl-item { display: flex; gap: 16px; margin-bottom: 6px; align-items: flex-start; }
+.tl-badge { min-width: 72px; text-align: center; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+.tl-content { flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 7px; padding: 10px 14px; font-size: 13px; }
+.tl-title { font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+.tl-desc { color: #64748b; font-size: 12.5px; line-height: 1.7; }
+
+/* 风险矩阵 */
+.risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.risk-card { background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; }
+.risk-card-header { padding: 8px 14px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.risk-level { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+.risk-high { background: #fee2e2; color: #991b1b; }
+.risk-mid { background: #fef9c3; color: #92400e; }
+.risk-low { background: #dcfce7; color: #166534; }
+.risk-card-body { padding: 10px 14px; font-size: 12.5px; color: #374151; }
+.risk-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.risk-row:last-child { margin-bottom: 0; }
+.risk-label { min-width: 42px; font-size: 10.5px; font-weight: 600; color: #94a3b8; padding-top: 1px; }
+.risk-val { flex: 1; color: #374151; line-height: 1.6; }
+section { margin-bottom: 0; }
+/* ===== 迭代能力卡片 ===== */
+.iter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 16px 0; }
+.iter-card { background: white; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+.iter-card-header { padding: 10px 14px; font-size: 13px; font-weight: 700; color: white; }
+.ih-blue { background: #2563eb; } .ih-green { background: #0d9488; } .ih-purple { background: #7c3aed; }
+.iter-card-body { padding: 12px 14px; font-size: 12.5px; color: #374151; line-height: 1.75; }
+/* ===== 任务闭环流 ===== */
+.loop-wrap { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin: 14px 0; }
+.loop-title { padding: 10px 16px; font-size: 13px; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px; }
+.lt-blue { background: #2563eb; } .lt-green { background: #16a34a; } .lt-slate { background: #475569; }
+.loop-steps { display: flex; flex-wrap: wrap; align-items: center; padding: 14px 16px; gap: 0; }
+.ls-node { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #334155; font-weight: 600; white-space: nowrap; }
+.ls-node.hi { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.ls-node.hl { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+.ls-node.hg { background: #f5f3ff; border-color: #ddd6fe; color: #5b21b6; }
+.ls-arr { color: #94a3b8; padding: 0 5px; font-size: 14px; flex-shrink: 0; }
+/* ===== 10桶分层 ===== */
+.bucket-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin: 14px 0; }
+.bk { border-radius: 6px; padding: 10px 3px; text-align: center; }
+.bk-num { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.9); }
+.bk-price { font-size: 13px; font-weight: 800; color: #fff; margin: 3px 0; }
+.bk-label { font-size: 9px; color: rgba(255,255,255,0.75); line-height: 1.3; }
+/* ===== 分流决策矩阵 ===== */
+.split-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+.split-card { background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+.split-card-hd { padding: 8px 13px; font-size: 12px; font-weight: 700; }
+.split-card-body { padding: 10px 13px; font-size: 12.5px; color: #374151; line-height: 1.7; }
+/* ===== 考核指标 ===== */
+.metric-block { margin: 12px 0; }
+.metric-hd { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 7px 7px 0 0; border: 1px solid #e2e8f0; border-bottom: none; font-size: 13px; font-weight: 700; }
+.metric-hd.guard { background: #fef2f2; color: #991b1b; } .metric-hd.north { background: #eff6ff; color: #1d4ed8; } .metric-hd.watch { background: #f5f3ff; color: #5b21b6; }
+.metric-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 14px; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 7px 7px; }
+.mchip { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+.mchip.red { background: #fee2e2; color: #991b1b; } .mchip.blue { background: #dbeafe; color: #1d4ed8; } .mchip.purple { background: #ede9fe; color: #5b21b6; } .mchip.gray { background: #f1f5f9; color: #475569; }
+/* ===== 推全决策流 ===== */
+.decision-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 12px 0; }
+.df-node { padding: 8px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; text-align: center; }
+.df-arr { color: #94a3b8; padding: 0 8px; font-size: 16px; }
+.df-cond { font-size: 11px; color: #64748b; padding: 2px 0; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="sidebar">
+  <h2>目录导航</h2>
+  <span class="group-label">背景</span>
+  <a href="#problems">现状问题分析</a>
+  <a href="#goal">迁移目标与路径</a>
+  <span class="group-label">第一阶段</span>
+  <a href="#capability">天渠能力补齐清单</a>
+  <a href="#media">媒体迁移优先级</a>
+  <span class="group-label">第二阶段</span>
+  <a href="#iter-cap">RTA迭代能力概览</a>
+  <a href="#task-loops">三大任务闭环流</a>
+  <a href="#strategy-design">策略约束与10桶设计</a>
+  <a href="#dual-exp">双层实验机制</a>
+  <a href="#split-mech">RTA分流机制</a>
+  <a href="#experiment">实验架构：业务A/B分离</a>
+  <span class="group-label">效果评估</span>
+  <a href="#metrics">考核指标体系</a>
+  <span class="group-label">工程保障</span>
+  <a href="#risk">风险识别与回滚</a>
+</nav>
+
+<main class="main">
+  <h1>天渠 RTA 架构迁移方案</h1>
+  <p class="subtitle">设计方案 · v2.0 &nbsp;|&nbsp; 目标：天渠独立直连媒体，去巨浪 / 去奥格，降本增效 &nbsp;|&nbsp; 分两阶段实施 &nbsp;|&nbsp; 含完整实验架构、分流机制与考核指标</p>
+
+  <!-- ========== 现状问题 ========== -->
+  <section id="problems">
+    <h2>现状问题分析</h2>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">当前年度费用</div>
+        <div class="kpi-val red">7000万+</div>
+        <div class="kpi-desc">巨浪 + 奥格合计，已达历史峰值</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">明年预测费用</div>
+        <div class="kpi-val red">破亿</div>
+        <div class="kpi-desc">LTV策略扩张 + 商业化外投并入，板上钉钉</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">巨浪IDM匹配率</div>
+        <div class="kpi-val red">60%</div>
+        <div class="kpi-desc">天渠IDM可达 70%+，拉新场景受损</div>
+      </div>
+    </div>
+
+    <h3>问题一：成本高企，能力重叠，收费机制不合理</h3>
+    <div class="two-col">
+      <div class="callout cb-red">
+        <strong>奥格收费机制</strong><br>
+        按请求量 × 人群包数量计费。同一请求命中多个人群包则多次计费。LTV策略上线后人群包已达 <strong>400+</strong>，靠人力合并已无法管控；多策略共用多个人群包的情况普遍存在，费用持续膨胀。
+      </div>
+      <div class="callout cb-red">
+        <strong>巨浪收费机制</strong><br>
+        按 RTAID 参竞规模计费，同一请求参竞多个 RTAID 多次计费。通投任务收费最贵（即便仅排除黑名单人群）。RTAID 越多费用越高，商业化外投并入后 RTAID 数量将大幅增加。
+      </div>
+    </div>
+    <div class="callout cb-yellow">
+      <strong>能力重叠本质：</strong>天渠已集成 人群更新、设备转 user_id、人群包/标签/上下文判定、溢价策略命中判定 等全套能力，几乎等于巨浪 + 奥格。当前架构是巨浪接收媒体流量后，因为自身不支持溢价，不得不转发给天渠处理，形成三跳串联的资源浪费。
+    </div>
+
+    <h3>问题二：巨浪能力缺失，严重制约主营业务 A 的用增</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>问题点</th>
+          <th>具体表现</th>
+          <th>业务影响</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-r">实验隔离</span></td>
+          <td>业务 A 与业务 B 共用巨浪实验 ID，分桶策略互相干扰；且业务 A 无法接入宙斯实验平台（巨浪用业务 B 的实验 ID）</td>
+          <td>策略效果评估失准，用增迭代受阻，已提需求 25 年底巨浪仍未支持</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-r">IDM 匹配率</span></td>
+          <td>巨浪 IDM 仅识别近几个月业务 B 的 userid，覆盖率 60%；天渠整合多方能力可达 70%+</td>
+          <td>拉新流量中 10%+ 无法进入实验，用增拉新数据不完整</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-r">自分桶覆盖</span></td>
+          <td>OPPO 应用市场、VIVO 信息流、VIVO 应用市场、荣耀应用市场、荣耀信息流等媒体支持自分桶，但巨浪不支持</td>
+          <td>这些媒体上业务 A 无法做 RTA 实验迭代，策略固化</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-r">数据安全</span></td>
+          <td>业务 B 主体与部分媒体有竞争关系，媒体数据不能下发巨浪；全量 RTA 请求数据难以获取</td>
+          <td>腾讯广告联盟点位无法利用；全网设备用户画像建设受阻</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ========== 迁移目标 ========== -->
+  <section id="goal">
+    <h2>迁移目标与整体路径</h2>
+
+    <div class="callout cb-blue">
+      <strong>核心目标：</strong>天渠直连媒体（直连 or Tanx 接入），去掉巨浪和奥格，将节省下来的成本用于采买数据、服务器及人力，提升用增算法模型效果和服务稳定性，支撑 1688 业务长期发展。
+    </div>
+
+    <!-- 架构对比 -->
+    <h3>架构演进对比（图1 → 图2）</h3>
+    <div class="arch-compare">
+      <!-- 图1 -->
+      <div class="arch-panel">
+        <div class="arch-panel-header old">图1 · 历史架构（三跳串联）</div>
+        <div class="arch-flow">
+          <div class="flow-row"><div class="flow-step step-gray">媒</div><div>媒体流量 → RTAID 召回</div></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><div class="flow-step step-orange">浪</div>
+            <div>
+              <div class="flow-node node-orange">巨浪</div><br>
+              RTAID拆分 · 设备匹配userid · 自分桶实验分流<br>
+              → 按人群包调用奥格
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><div class="flow-step step-orange">奥</div>
+            <div>
+              <div class="flow-node node-orange">奥格</div><br>
+              离线拉标签odps表 · 离线更新人群包<br>
+              计算是否命中人群包 → 返回结果
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><div class="flow-step step-blue">渠</div>
+            <div>
+              <div class="flow-node node-blue">1688天渠</div>（参竞流量转发）<br>
+              设备转userid · IDM · 人群包/标签判定<br>
+              溢价策略命中 · 黑名单 · 组装返回
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><div class="flow-step step-gray">媒</div><div>返回媒体 → 参竞 &amp; 溢价生效</div></div>
+        </div>
+      </div>
+      <!-- 图2 -->
+      <div class="arch-panel">
+        <div class="arch-panel-header new">图2 · 目标架构（天渠单跳直连）</div>
+        <div class="arch-flow">
+          <div class="flow-row"><div class="flow-step step-gray">媒</div><div>媒体流量 → RTAID 召回</div></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><div class="flow-step step-green">渠</div>
+            <div>
+              <div class="flow-node node-green">1688天渠（全量承接）</div><br>
+              <span style="color:#15803d;">✦</span> 离线拉标签odps表 + 天梯更新人群包<br>
+              设备号转userid · RTAID请求拆分<br>
+              <span class="fc-badge fc-new">新增</span> 自分桶实验分流（全媒体）<br>
+              增量评估实验分流 · 分RTAID获取定向&amp;排除<br>
+              天梯计算是否命中人群包<br>
+              分RTAID命中溢价策略/黑名单 · 组装返回
+            </div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><div class="flow-step step-gray">媒</div><div>返回媒体 → 参竞 &amp; 溢价生效</div></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>两阶段实施总览</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-badge" style="background:#dbeafe;color:#1d4ed8;">第一阶段</div>
+        <div class="tl-content">
+          <div class="tl-title">天渠能力补齐 + 媒体逐步直连迁移</div>
+          <div class="tl-desc">补足自分桶全媒体覆盖、QPS 扩容、直连/Tanx 接入能力，按媒体从小到大分批切量，逐步替代巨浪和奥格的流量承接角色。</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-badge" style="background:#dcfce7;color:#15803d;">第二阶段</div>
+        <div class="tl-content">
+          <div class="tl-title">RTA 实验架构重建，完善用增实验迭代能力</div>
+          <div class="tl-desc">在天渠内实现业务 A / B 实验体系完全分离，业务 A 独立实验 ID 接入宙斯平台，自分桶全媒体覆盖，最终实现全媒体不走巨浪和奥格。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 天渠能力补齐 ========== -->
+  <section id="capability">
+    <h2>第一阶段：天渠能力补齐清单</h2>
+
+    <p>对照图1→图2的功能差距，天渠需要新增或增强以下能力。以下按优先级排序：</p>
+
+    <div class="flow-chain">
+      <div class="flow-chain-item">
+        <div class="fc-num">P0</div>
+        <div class="fc-body">
+          <strong>自分桶实验分流 — 全媒体覆盖</strong>
+          <span class="fc-badge fc-new">新增</span>
+          <br>
+          <span style="color:#64748b;font-size:12.5px;">
+            天渠已有自分桶能力但覆盖不全。需对 OPPO 应用市场、VIVO 信息流/应用市场、荣耀应用市场/信息流等媒体完成自分桶适配，这些媒体在巨浪侧长期无法使用自分桶，迁移后可立即解锁增益。
+          </span>
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">P0</div>
+        <div class="fc-body">
+          <strong>QPS 服务器扩容</strong>
+          <span class="fc-badge fc-new">新增</span>
+          <br>
+          <span style="color:#64748b;font-size:12.5px;">
+            天渠当前流量略少于巨浪。承接巨浪全量后 QPS 将显著提升，需提前完成容量评估和服务器采买。建议设定压测目标：在峰值流量 ×1.5 安全系数下 RT 保持稳定，错误率低于 0.1%。
+          </span>
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">P0</div>
+        <div class="fc-body">
+          <strong>直连媒体接入 / Tanx 接入</strong>
+          <span class="fc-badge fc-new">新增</span>
+          <br>
+          <span style="color:#64748b;font-size:12.5px;">
+            目前天渠靠巨浪转发，无直连媒体能力。需完成两类接入：① 直连接入：适合小流量媒体（延迟更低，如 OPPO/VIVO/荣耀系列），② Tanx 接入：适合集团 APP 矩阵大流量（标准化协议，统一接口），集团内各 App 流量均走 Tanx 汇聚。
+          </span>
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">P1</div>
+        <div class="fc-body">
+          <strong>媒体数据安全隔离通道</strong>
+          <span class="fc-badge fc-new">新增</span>
+          <br>
+          <span style="color:#64748b;font-size:12.5px;">
+            业务 B 主体与腾讯广告等媒体存在竞争关系，导致联盟点位数据无法下发巨浪。天渠以业务 A 主体接入，需与腾讯广告等媒体确认数据合规性，开通数据下发通道，解锁全量 RTA 请求数据用于用户画像建设。
+          </span>
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">P1</div>
+        <div class="fc-body">
+          <strong>增量评估实验分流 — 独立验证</strong>
+          <span class="fc-badge fc-exist">已有</span>
+          <br>
+          <span style="color:#64748b;font-size:12.5px;">
+            天渠已有增量评估分流能力，但需要核查是否存在对巨浪实验 ID 的隐性依赖。确保迁移后业务 A 的增量评估完全在天渠内部闭环，不依赖巨浪侧的分组信息。
+          </span>
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">P1</div>
+        <div class="fc-body">
+          <strong>人群包/标签迁移 — 奥格 400+ 人群包的天渠化</strong>
+          <span class="fc-badge fc-new">新增</span>
+          <br>
+          <span style="color:#64748b;font-size:12.5px;">
+            奥格上 400+ 人群包需要迁移到天渠标签体系。建议：① 梳理人群包依赖关系，合并使用相同标签逻辑的人群包（天渠支持标签逻辑合并，可减少冗余）；② 迁移期保留奥格双跑一段时间，A/B 验证命中率一致性。
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout cb-green">
+      <strong>成本节省估算：</strong>第一阶段每完成一个媒体的迁移，该媒体对应的巨浪 RTAID 参竞费用 + 奥格人群包请求费用即可同步停止计算。若第一批（OPPO/VIVO/荣耀）占巨浪流量约 15-20%，预计年化节省 <strong>1000万+</strong>。完成全量迁移后年化节省目标 <strong>7000万～1亿</strong>（视完成进度）。
+    </div>
+  </section>
+
+  <!-- ========== 媒体迁移优先级 ========== -->
+  <section id="media">
+    <h2>媒体迁移优先级排序</h2>
+
+    <p>迁移原则：<strong>从小到大，分批切量，每批保留流量回滚开关</strong>。切量节奏参考：每次切量比例不超过 10%，观察 RT / 错误率 / 命中率稳定后再进行下一批。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>迁移批次</th>
+          <th>媒体</th>
+          <th>接入方式</th>
+          <th>优先迁移理由</th>
+          <th>预期收益</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag" style="background:#dbeafe;color:#1d4ed8;">第一批·验证期</span></td>
+          <td>OPPO 应用市场<br>VIVO 信息流<br>VIVO 应用市场<br>荣耀应用市场<br>荣耀信息流</td>
+          <td><span class="tag-gray tag">直连</span></td>
+          <td>① 流量相对小，风险可控；② 巨浪对这些媒体不支持自分桶，迁移后可立即解锁 RTA 实验能力，验证收益显著</td>
+          <td>解锁自分桶实验，节省对应 RTAID/人群包费用，作为迁移 SOP 的模板</td>
+        </tr>
+        <tr>
+          <td><span class="tag" style="background:#f0fdf4;color:#15803d;">第二批·扩量期</span></td>
+          <td>集团 APP 矩阵<br>（各内部 App 流量）</td>
+          <td><span class="tag-gray tag">Tanx 接入</span></td>
+          <td>集团内 App 走 Tanx 统一汇聚，有标准化接入协议。流量大但接入方式规范，第一批验证 SOP 后可规模化复制</td>
+          <td>大幅降低巨浪承载量，完成主要流量迁移；Tanx 接入后集团内数据流通性更好</td>
+        </tr>
+        <tr>
+          <td><span class="tag" style="background:#fef9c3;color:#92400e;">第三批·收尾期</span></td>
+          <td>腾讯广告联盟点位<br>等受限媒体</td>
+          <td><span class="tag-gray tag">直连</span></td>
+          <td>数据安全合规确认周期长（业务 B 主体竞争关系），需提前启动法务/商务对接，最后迁移不影响整体降本节奏</td>
+          <td>解锁此前无法利用的媒体数据，完善全网设备用户画像；该批次完成后实现全量去巨浪</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-gray">观察保留</span></td>
+          <td>巨浪剩余其他媒体</td>
+          <td>视前几批效果决定</td>
+          <td>天渠稳定运行、各批次指标符合预期后，按同一 SOP 迁移剩余媒体</td>
+          <td>最终全量下线巨浪和奥格，实现年化节省目标</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout cb-yellow">
+      <strong>切量策略建议：</strong>每个媒体迁移时，建议先切 5% 流量到天渠直连，观察 24 小时指标（RT p99、错误率、人群命中率 diff）无异常后，逐步扩量至 10%→30%→50%→100%。每次扩量前确认监控大盘稳定。
+    </div>
+  </section>
+
+  <!-- ========== RTA 迭代能力概览 ========== -->
+  <section id="iter-cap">
+    <h2>第二阶段：天渠 RTA 迭代能力概览</h2>
+    <div class="iter-grid">
+      <div class="iter-card"><div class="iter-card-header ih-blue">能力一：流量下发切换</div><div class="iter-card-body">从小媒体（OPPO/VIVO/荣耀）开始逐步直连或接入 Tanx，分批切量保留回滚开关，RT p99 和错误率稳定后再扩量。</div></div>
+      <div class="iter-card"><div class="iter-card-header ih-green">能力二：自分桶实验能力</div><div class="iter-card-body">接入 Zeus 实验平台：自动生成分桶规则、自动化实验效果报表、自动化推全审批上线工作流，支持全媒体自分桶（含巨浪不支持的 OPPO/VIVO/荣耀等）。</div></div>
+      <div class="iter-card"><div class="iter-card-header ih-purple">能力三：设备统一标签 Tair 化</div><div class="iter-card-body">将 pLTV、BA 分层等常用标签写入 Tair，<strong>不过人群包</strong>，实时毫秒级查询，彻底替代奥格人群包模式，降低人群包请求计费，插件化策略更新。</div></div>
+    </div>
+  </section>
+
+  <!-- ========== 三大任务闭环 ========== -->
+  <section id="task-loops">
+    <h2>三大任务闭环流设计</h2>
+    <h3>闭环一：RTAID 增改闭环</h3>
+    <div class="loop-wrap"><div class="loop-title lt-blue">RTAID 增改闭环（与 Demo RTAID管理页对齐）</div><div class="loop-steps"><span class="ls-node hi">① 新建 RTAID</span><span class="ls-arr">→</span><span class="ls-node">② 自动生成 Zeus 实验</span><span class="ls-arr">→</span><span class="ls-node">③ 关联 RTA 实验名称</span><span class="ls-arr">→</span><span class="ls-node">④ 配置实验流量%（各组分配：实验组1/2/对照/空白）</span><span class="ls-arr">→</span><span class="ls-node">⑤ 点击"生成RTA策略"进入策略管理页配置各组策略</span><span class="ls-arr">→</span><span class="ls-node hl">⑥ 生成新 RTAID 版本</span><span class="ls-arr">→</span><span class="ls-node">⑦ 审批通过</span><span class="ls-arr">→</span><span class="ls-node hl">⑧ 实时生效 ✓</span></div></div>
+    <div class="callout cb-blue" style="font-size:12.5px;"><strong>关键设计：</strong>RTAID 在 Demo 的 RTAID 管理页中创建，关键字段：渠道（Tanx/巨量引擎/腾讯等）、RTAID 编号、RTAID 名称、关联 RTA 实验名称。RTAID 与实验的关联在此处配置，支持编辑和下线操作。</div>
+    <h3>闭环二：实验增改闭环</h3>
+    <div class="loop-wrap"><div class="loop-title lt-green">实验增改闭环（与 Demo 实验管理页+策略管理页对齐）</div><div class="loop-steps"><span class="ls-node hi">① 新建RTA实验（实验管理页）</span><span class="ls-arr">→</span><span class="ls-node">② 配置渠道/RTAID/实验名称/描述</span><span class="ls-arr">→</span><span class="ls-node hl">③ 配置实验流量%及各组分配（生成RTA策略）</span><span class="ls-arr">→</span><span class="ls-node">④ 策略管理页：配置策略类型/出价模式/条件标签</span><span class="ls-arr">→</span><span class="ls-node">⑤ 实验运行（自动分流+数据采集）</span><span class="ls-arr">→</span><span class="ls-node hg">⑥ 实验报告（自动化指标报表：B浓度/ROI_0/LTV_0/CAC/买家转化率）</span><span class="ls-arr">→</span><span class="ls-node">⑦ 实验决策：推全 / 继续观察 / 下线实验</span><span class="ls-arr">→</span><span class="ls-node">⑧ 推全：选 RTAID + 选策略 → 全量生效 → 实验自动下线</span><span class="ls-arr">→</span><span class="ls-node hl">⑨ 实时生效 ✓</span></div></div>
+    <div class="callout cb-green" style="font-size:12.5px;"><strong>关键设计：</strong>新建实验弹窗中包含"生成RTA策略"按钮，点击后跳转到策略管理页为各组创建对应类型策略。实验运行后可点击"报告"查看完整实验报告，报告包含：①指标明细表（流量占比/花费/会员数/B会员数/B用户浓度/CAC/LTV_0/人均LTV_0/ROI_0/买家转化率，各组各行）②各组策略分桶数据②系统自动生成实验结论（推荐最优组）④实验决策三按钮：推全 / 继续观察 / 下线实验。点击"推全"可直接进入推全策略弹窗（选RTAID + 选策略 → 确认推全），推全后实验自动置为下线状态。</div>
+    <h3>闭环三：实时参竞闭环</h3>
+    <div class="loop-wrap"><div class="loop-title lt-slate">实时参竞闭环</div><div class="loop-steps"><span class="ls-node hi">① 媒体RTA请求（deviceid+RTAID）</span><span class="ls-arr">→</span><span class="ls-node">② ID Mapping（device→userid）</span><span class="ls-arr">→</span><span class="ls-node hl">③ Tair查询标签（pLTV/preB/BA分层）</span><span class="ls-arr">→</span><span class="ls-node">④ 实验分桶判断</span><span class="ls-arr">→</span><span class="ls-node">⑤ 人群分层匹配</span><span class="ls-arr">→</span><span class="ls-node hg">⑥ 命中出价策略</span><span class="ls-arr">→</span><span class="ls-node">⑦ 返回溢价结果/出价系数</span><span class="ls-arr">→</span><span class="ls-node hl">⑧ 日志存储（请求级全量）✓</span></div></div>
+    <div class="callout cb-yellow" style="font-size:12.5px;"><strong>关键设计：</strong>Tair 标签查询替代人群包接口调用，平均 &lt;5ms。全量请求日志存储支持全网设备用户画像建设，并为实验报表提供数据源。</div>
+  </section>
+
+  <!-- ========== RTA 策略约束与 10 桶设计 ========== -->
+  <section id="strategy-design">
+    <h2>RTA 策略约束与 10 桶分层设计</h2>
+    <div class="callout cb-yellow">
+      <strong>与 Demo 对齐说明：</strong>策略设计采用<strong>出价策略标签（条件标签）</strong>定义，而非固定桶号排序。一个 RTA 实验下可包含多个策略（实验组策略 / 对照策略 / 空白策略），每种策略类型独立定义条件标签与桶号映射，桶号由用户配置，媒体层 10 桶上限为硬性约束。
+    </div>
+
+    <h3>基本约束（媒体层硬性限制）</h3>
+    <div class="two-col">
+      <div class="callout cb-blue"><strong>分桶上限：10 个桶是媒体层硬性约束。</strong>巨量、腾讯等主流渠道均为此硬限，不可绕过。天渠的实验分桶设计必须在这个工程限制内完成。各组（实验组、对照组、空白组）共享同一媒体的 10 个固定桶，每组的策略决定每个桶的出价逻辑。</div>
+      <div class="callout cb-blue"><strong>策略类型三分法（与 Demo 对齐）：</strong><br>
+        <strong>实验策略</strong>：携带主动调权出价逻辑（按条件标签出价），用于验证新策略效果<br>
+        <strong>对照策略</strong>：携带基线出价逻辑（如固定分桶策略 / 全局算法出价），作为参照<br>
+        <strong>空白策略（空白组）</strong>：无策略，不出价，用于度量 RTA 整体增量效果
+      </div>
+    </div>
+
+    <h3>实验分组结构（与 Demo 对齐）</h3>
+    <p>一个 RTA 实验可配置多个实验组 + 1 个对照组 + 1 个空白组，各组百分比由实验流量配置决定：</p>
+    <table>
+      <thead><tr><th>组别</th><th>策略类型</th><th>出价行为</th><th>流量占比（示例）</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag" style="background:#dbeafe;color:#1d4ed8;">实验组1</span></td><td>实验策略 A</td><td>按条件标签主动调权出价</td><td>30%</td><td>验证新出价策略的核心实验组</td></tr>
+        <tr><td><span class="tag" style="background:#dbeafe;color:#1d4ed8;">实验组2</span></td><td>实验策略 B</td><td>按条件标签主动调权出价（另一版本）</td><td>30%</td><td>同时验证第二种实验策略，支持多版本赛马</td></tr>
+        <tr><td><span class="tag" style="background:#f0fdf4;color:#15803d;">对照组</span></td><td>对照策略</td><td>固定基线出价（如媒体自定义 / 均匀出价）</td><td>30%</td><td>对照基准，计算实验增量</td></tr>
+        <tr><td><span class="tag" style="background:#f1f5f9;color:#475569;">空白组</span></td><td>无策略空白组</td><td>不出价（完全不参竞）</td><td>10%</td><td>度量 RTA 全局增量 ROI，排除出价效果干扰</td></tr>
+      </tbody>
+    </table>
+
+    <h3>出价策略标签定义方式（与 Demo 对齐）</h3>
+    <p>每个策略通过<strong>出价策略标签</strong>定义出价逻辑，每条标签对应一个条件、一个出价值和一个桶号映射：</p>
+    <div class="flow-chain">
+      <div class="flow-chain-item"><div class="fc-num" style="font-size:10px;">标签1</div><div class="fc-body" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;"><span><strong>条件：</strong>pLTV &gt; 3 且 preB &gt; 0.14</span><span style="color:#64748b;">建议区间 1.5～1.6</span><span><strong>出价：</strong>1.55</span><span><strong>桶号：</strong>1</span><span class="tag tag-g" style="font-size:10px;">极高价值客群</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num" style="font-size:10px;">标签2</div><div class="fc-body" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;"><span><strong>条件：</strong>pLTV &gt; 2.8 且 preB &gt; 0.14</span><span style="color:#64748b;">建议区间 1.2～1.3</span><span><strong>出价：</strong>1.25</span><span><strong>桶号：</strong>2</span><span class="tag tag-g" style="font-size:10px;">高价值客群</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num" style="font-size:10px;">标签3</div><div class="fc-body" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;"><span><strong>条件：</strong>pLTV &gt; 2.8 且 preB &gt; 0.14</span><span style="color:#64748b;">建议区间 1.2～1.3</span><span><strong>出价：</strong>1.20</span><span><strong>桶号：</strong>3</span><span class="tag tag-y" style="font-size:10px;">中高价值客群</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num" style="font-size:10px;">… 更多</div><div class="fc-body"><span style="color:#64748b;font-size:12.5px;">可通过"添加出价策略标签"继续增加，最多对应 10 个桶（受媒体桶上限约束）。每条标签独立配置出价值和桶号，系统校验桶号不重复且桶号总数 ≤ 10。</span></div></div>
+    </div>
+    <div class="callout cb-purple" style="font-size:12.5px;"><strong>与旧文档差异：</strong>旧文档描述的"桶1=4.0、桶10=0.4（兼做空桶）"是一种固定序列的简化说明。Demo 中策略标签更灵活——条件可组合 pLTV+preB 多维度，出价值由用户根据建议区间自行填写，桶号手动指定。空白组是独立的"无策略空白组"，不是出价最低的第10桶。</div>
+
+    <h3>10 桶用途分配示意（一个实验内）</h3>
+    <div class="bucket-grid">
+      <div class="bk" style="background:#2563eb;"><div class="bk-num">桶 1</div><div class="bk-price" style="font-size:10px;">实验组1</div><div class="bk-label">标签条件出价</div></div>
+      <div class="bk" style="background:#2563eb;"><div class="bk-num">桶 2</div><div class="bk-price" style="font-size:10px;">实验组1</div><div class="bk-label">标签条件出价</div></div>
+      <div class="bk" style="background:#2563eb;"><div class="bk-num">桶 3</div><div class="bk-price" style="font-size:10px;">实验组1</div><div class="bk-label">标签条件出价</div></div>
+      <div class="bk" style="background:#3b82f6;"><div class="bk-num">桶 4</div><div class="bk-price" style="font-size:10px;">实验组2</div><div class="bk-label">标签条件出价</div></div>
+      <div class="bk" style="background:#3b82f6;"><div class="bk-num">桶 5</div><div class="bk-price" style="font-size:10px;">实验组2</div><div class="bk-label">标签条件出价</div></div>
+      <div class="bk" style="background:#3b82f6;"><div class="bk-num">桶 6</div><div class="bk-price" style="font-size:10px;">实验组2</div><div class="bk-label">标签条件出价</div></div>
+      <div class="bk" style="background:#16a34a;"><div class="bk-num">桶 7</div><div class="bk-price" style="font-size:10px;">对照组</div><div class="bk-label">基线出价</div></div>
+      <div class="bk" style="background:#16a34a;"><div class="bk-num">桶 8</div><div class="bk-price" style="font-size:10px;">对照组</div><div class="bk-label">基线出价</div></div>
+      <div class="bk" style="background:#16a34a;"><div class="bk-num">桶 9</div><div class="bk-price" style="font-size:10px;">对照组</div><div class="bk-label">基线出价</div></div>
+      <div class="bk" style="background:#475569;"><div class="bk-num">桶 10</div><div class="bk-price" style="font-size:10px;">空白组</div><div class="bk-label">不出价</div></div>
+    </div>
+    <p style="font-size:12.5px;color:#64748b;margin-top:6px;">注：实验组1/2/对照组/空白组的桶数分配比例由实验流量配置决定，可灵活调整。上图仅为示意（3:3:3:1）。</p>
+
+    <h3>分桶均匀性保障：初始浓度一致性要求</h3>
+    <div class="callout cb-purple"><strong>核心原则：</strong>在 RTA 策略干预之前，每个桶中各 pLTV 分层的用户占比应当一致。即：若全量用户中 pLTV TOP 10% 用户占比 10%，那么每个桶中 TOP 10% 用户占比也应趋近 10%。分流方案必须保证这一点（见双层实验机制起点校验部分）。</div>
+
+    <h3>推全决策逻辑（与 Demo 对齐）</h3>
+    <div class="decision-flow"><div class="df-node" style="background:#f1f5f9;color:#475569;">各实验组 + 对照组<div class="df-cond">运行期内采集数据</div></div><div class="df-arr">→</div><div class="df-node" style="background:#fee2e2;color:#991b1b;">护栏检查<div class="df-cond">ROI_0 ≥ 空白组 AND ≥ 对照组</div></div><div class="df-arr">→</div><div class="df-node" style="background:#eff6ff;color:#1d4ed8;">北极星选组<div class="df-cond">LTV_0 最大的实验组</div></div><div class="df-arr">→</div><div class="df-node" style="background:#f5f3ff;color:#5b21b6;">审批通过</div><div class="df-arr">→</div><div class="df-node" style="background:#f0fdf4;color:#15803d;">推全生效<div class="df-cond">最优组策略全量推</div></div></div>
+    <div class="callout cb-green" style="font-size:12.5px;"><strong>推全判断：</strong>护栏指标 ROI_0 必须同时超过空白组和对照组。在满足护栏前提下，取所有实验组中 LTV_0 最大的组对应策略推全。与上一轮推全结果及历史各轮实验均对比，取历史局最优。</div>
+    <h3>推全操作流程（对应 Demo 推全弹窗）</h3>
+    <div class="flow-chain">
+      <div class="flow-chain-item"><div class="fc-num">①</div><div class="fc-body">在实验报告弹窗中点击<strong>推全</strong>，或在实验列表直接点击<strong>推全</strong>操作按钮</div></div>
+      <div class="flow-chain-item"><div class="fc-num">②</div><div class="fc-body">弹出推全策略弹窗：选择要推全的 <strong>RTAID</strong>（默认当前实验关联的 RTAID）+ 选择要推全的<strong>实验组策略</strong></div></div>
+      <div class="flow-chain-item"><div class="fc-num">③</div><div class="fc-body">确认推全：除空白组外，该 RTAID 关联的所有渠道请求全部切换为推全策略出价；实验状态自动设为<strong>下线</strong></div></div>
+    </div>
+    <div class="callout cb-yellow" style="font-size:12.5px;"><strong>推全说明：</strong>推全为不可逆操作，推全后旧实验下线，策略全量生效。若需回滚，需重新创建实验并手动配置回退策略。</div>
+  </section>
+
+  <!-- ========== RTA 双层实验机制 ========== -->
+  <section id="dual-exp">
+    <h2>RTA 双层实验机制设计</h2>
+    <div class="callout cb-blue">
+      <strong>核心设计原则：</strong>控制变量法要求"曝光前10桶用户价值分布保持均匀"是<strong>控制变量</strong>（消除混杂因素），"曝光后各桶竞得用户B浓度"是<strong>因变量</strong>（观察出价效果的结果），而"RTA出价系数"才是<strong>自变量</strong>（主动干预的变量）。两层实验分别回答不同问题，互不耦合。
+    </div>
+
+    <h3>两层实验总览</h3>
+    <div class="two-col">
+      <div class="sys-box">
+        <div class="sys-header blue">层级一：策略内部梯度校验</div>
+        <div class="sys-body">
+          <div style="font-size:13px;color:#374151;line-height:1.8;">
+            <strong>问题：</strong>这一版策略内，10档出价梯度中谁的性价比最优？<br>
+            <strong>分流层：</strong>媒体固定 10 桶（hash(userid) % 10）<br>
+            <strong>自变量：</strong>出价系数（桶1=4.0 … 桶10=0.4）<br>
+            <strong>因变量：</strong>曝光后竞得用户的 B 浓度<br>
+            <strong>前提：</strong>10桶初始 pLTV 分布需均匀（起点校验通过后才可开跑）<br>
+            <strong>结论：</strong>B浓度最高的桶 = 出价最准的档位 → 优先放量
+          </div>
+        </div>
+      </div>
+      <div class="sys-box">
+        <div class="sys-header green">层级二：策略版本迭代校验（新增）</div>
+        <div class="sys-body">
+          <div style="font-size:13px;color:#374151;line-height:1.8;">
+            <strong>问题：</strong>新版策略（整体）是否优于上一版策略？<br>
+            <strong>分流层：</strong>天渠平台自分桶（独立于媒体10桶），Step 5/6 切分<br>
+            <strong>自变量：</strong>整版策略（V_n vs V_n+1）<br>
+            <strong>因变量：</strong>整组 ROI_0 / LTV_0 / B浓度综合指标<br>
+            <strong>约束：</strong>不在媒体10桶内做二维交叉（避免超出媒体桶上限）<br>
+            <strong>结论：</strong>新版整组优于老版整组 → 推全新版
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>层级一：策略内部梯度校验（增强版：加起点校验）</h3>
+
+    <div class="callout cb-yellow">
+      <strong>为什么需要起点校验？</strong>若 10 个桶里用户构成本来就不一样（桶1天生分到消费能力强的老用户，桶10分到刚注册的新用户），即便不做任何出价干预，桶1的转化效果也大概率优于桶10。这时观察到的"B浓度差异"来自用户分布的混杂，而非出价干预的效果，赛马结论将完全失效。
+    </div>
+
+    <h3>起点校验方法</h3>
+    <div class="flow-chain">
+      <div class="flow-chain-item"><div class="fc-num">Step 1</div><div class="fc-body"><strong>分层用户预分配</strong>：实验启动前，对全量 userid 按 pLTV 模型分为 S/A/B/C 四个价值层级，确定各层用户占比（如 S:A:B:C = 5%:15%:30%:50%）</div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 2</div><div class="fc-body"><strong>分层内独立哈希分桶</strong>：在每个价值层级内部独立执行 hash(userid) % 10，而非对全量用户统一 hash。确保每个桶里 S/A/B/C 各层浓度严格一致（分层哈希 = Stratified Hashing）</div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 3</div><div class="fc-body"><strong>起点浓度校验</strong>：抽样验证 10 桶各层用户占比偏差 &lt; 3%。若偏差超标，重新调整哈希函数，直至通过校验再正式开跑实验</div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 4</div><div class="fc-body"><strong>梯度赛马正式开跑</strong>：10 桶按 pLTV 排序绑定出价系数（桶1=4.0、桶2=3.5…桶10=0.4），开始曝光竞价</div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 5</div><div class="fc-body"><strong>B浓度观测与结论</strong>：观察各桶曝光后竞得用户的 B 浓度。桶 X 的 B 浓度高 → 出价 X 在这个价值区间买到了正确的人 → 可以放大该档位出价配额</div></div>
+    </div>
+
+    <div class="callout cb-purple">
+      <strong>分层哈希（Stratified Hashing）的必要性：</strong>对全量用户统一 hash(userid) % 10 在理论上期望均匀，但实际中用户 ID 分布规律性（如新用户 ID 连续递增）可能导致某些桶系统性聚集特定价值层用户。分层哈希通过在每个价值层内独立分桶，从机制上消除这种混杂，是起点均匀性的工程保障。
+    </div>
+
+    <h3>层级二：策略版本迭代校验（新增设计）</h3>
+
+    <div class="callout cb-red">
+      <strong>为什么现有机制无法回答版本迭代问题？</strong>现有机制将 10 个媒体桶全部用于梯度赛马（自变量是10档出价），媒体桶上限已用满。若再把"版本A vs 版本B"嵌入同一个 10 桶结构，就变成二维交叉设计，混杂了"价格差异"和"版本差异"两个自变量，实验结论无法归因。
+    </div>
+
+    <p>解决方案：将版本比较提升到<strong>天渠平台层面</strong>（Step 5/6 的自分桶），完全独立于媒体10桶结构。</p>
+
+    <h3>版本迭代实验分流结构（与 Demo 对齐）</h3>
+    <table>
+      <thead>
+        <tr><th>分流层级</th><th>分流工具</th><th>分组名称</th><th>流量占比</th><th>策略类型</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td rowspan="4"><strong>天渠平台层（Step 6）</strong><br>实验组别分流</td>
+          <td rowspan="4">天渠增量评估实验分流<br>（独立命名空间）</td>
+          <td><span class="tag" style="background:#dbeafe;color:#1d4ed8;">实验组1</span></td>
+          <td style="color:#1d4ed8;">可配置%</td>
+          <td>实验策略 A</td>
+          <td>按条件标签出价，验证新策略</td>
+        </tr>
+        <tr>
+          <td><span class="tag" style="background:#dbeafe;color:#1d4ed8;">实验组2</span></td>
+          <td style="color:#1d4ed8;">可配置%</td>
+          <td>实验策略 B</td>
+          <td>多版本赛马时的第二实验组</td>
+        </tr>
+        <tr>
+          <td><span class="tag" style="background:#f0fdf4;color:#15803d;">对照组</span></td>
+          <td style="color:#16a34a;">可配置%</td>
+          <td>对照策略</td>
+          <td>固定基线出价，作为参照基准</td>
+        </tr>
+        <tr>
+          <td><span class="tag" style="background:#f1f5f9;color:#475569;">空白组</span></td>
+          <td style="color:#475569;">可配置%</td>
+          <td>无策略空白组</td>
+          <td>完全不出价，度量 RTA 整体增量</td>
+        </tr>
+        <tr>
+          <td><strong>媒体层（Step 5）</strong><br>桶位分配</td>
+          <td>媒体固定10桶<br>（各组按比例分配桶位）</td>
+          <td>桶 1～10（各组内部）</td>
+          <td>按组别比例分配</td>
+          <td>各组各自的策略标签</td>
+          <td>各桶按所属组的策略标签匹配出价</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout cb-blue" style="font-size:12.5px;">
+      <strong>分流比例说明：</strong>老版本30% / 新版本70% 为默认配置，可根据风险评估调整（如初次灰度可用 10% / 90%，验证无异常后扩量）。两组各自在媒体层独立运行10桶梯度赛马，互不干扰。
+    </div>
+
+    <h3>版本迭代实验完整流程</h3>
+    <div class="flow-chain">
+      <div class="flow-chain-item"><div class="fc-num">① 前置</div><div class="fc-body"><strong>准备新版策略 V_n+1</strong>：完成10桶出价表的参数更新（如调整某些桶的出价系数），走 RTAID 增改闭环生成新版本，但先不全量推</div></div>
+      <div class="flow-chain-item"><div class="fc-num">② 分流</div><div class="fc-body"><strong>天渠平台层：实验组别分流</strong>（Step 6 增量评估实验分流）<br><span style="color:#64748b;font-size:12.5px;">按实验流量配置，将 userid 哈希分配至 实验组1 / 实验组2 / 对照组 / 空白组。各组流量比例在新建 RTA 实验弹窗中配置（如 30% + 30% + 30% + 10%）。</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num">③ 映射</div><div class="fc-body"><strong>媒体层：各组按所属策略标签出价</strong><br><span style="color:#64748b;font-size:12.5px;">实验组1/2 各自应用实验策略的条件标签出价；对照组应用对照策略基线出价；空白组不出价。每组的桶位由策略中配置的桶号决定，媒体共用 10 桶。</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num">④ 观测</div><div class="fc-body"><strong>分层收集指标</strong><br><span style="color:#64748b;font-size:12.5px;">① 组间比较：实验组1 vs 实验组2 vs 对照组的 ROI_0 / LTV_0 / B浓度整体指标（回答"哪版策略整体更优"）<br>② 与空白组对比：任意实验组 vs 空白组（回答"RTA 整体是否有增量价值"）</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num">⑤ 决策</div><div class="fc-body"><strong>双层校验通过后推全</strong><br><span style="color:#64748b;font-size:12.5px;">层级一通过（ROI_0 ≥ 空白组 AND ≥ 对照组）AND 层级二通过（实验组 LTV_0 最优且历史最优）→ 审批通过后全量推送最优实验策略，下线对照组和其他实验组。如未通过则保留对照策略，调整实验策略参数后进入下一轮迭代。</span></div></div>
+    </div>
+
+    <h3>两层实验机制完整数据流对照</h3>
+    <table>
+      <thead>
+        <tr><th>实验维度</th><th>自变量</th><th>因变量</th><th>控制变量</th><th>分流工具</th><th>推全条件</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>层级一：梯度校验</strong></td>
+          <td>出价系数（4.0→0.4）</td>
+          <td>各桶曝光后B浓度</td>
+          <td>10桶初始 pLTV 分布均匀（起点校验）</td>
+          <td>媒体固定10桶</td>
+          <td>最优桶 B 浓度最高 + ROI_0 护栏达标</td>
+        </tr>
+        <tr>
+          <td><strong>层级二：实验组赛马</strong></td>
+          <td>实验组策略（实验组1/2 vs 对照组）</td>
+          <td>各组 ROI_0 / LTV_0 / B浓度综合指标</td>
+          <td>各组用户价值分布一致（平台层统一哈希）</td>
+          <td>天渠平台自分桶（Step 6，新建实验流量配置）</td>
+          <td>最优实验组 ROI_0 ≥ 空白组 AND ≥ 对照组，且 LTV_0 历史最优</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout cb-green">
+      <strong>关键结论——为什么这样设计才是完备的：</strong><br>
+      单独有层级一：只能知道"这版策略内出价梯度是否合理"，但不能告诉你新版本是否优于历史。<br>
+      单独有层级二：可以验证版本整体优劣，但如果策略内部出价梯度不合理，即使新版本胜出也无法知道"应该更大力投哪个档位"。<br>
+      <strong>两层同时运行：既验证版本方向是否正确（层级二），也找到版本内最优出价点（层级一），构成完备的迭代闭环。</strong>
+    </div>
+  </section>
+
+  <!-- ========== RTA 分流机制 ========== -->
+  <section id="split-mech">
+    <h2>RTA 分流机制设计</h2>
+    <h3>核心问题：用 userid 分流还是 deviceid 分流？</h3>
+    <div class="split-matrix">
+      <div class="split-card"><div class="split-card-hd" style="background:#eff6ff;color:#1d4ed8;">场景 A：有 deviceid 且可映射到 userid</div><div class="split-card-body"><strong>流量：</strong>已登录用户（天渠 IDM 覆盖的 70%+ 请求）<br>同一用户在头条/腾讯/百度/快手等媒体均有曝光，若用 deviceid 分流会导致同一用户在不同媒体分入不同桶，产生交叉污染。<br><strong style="color:#1d4ed8;">结论：以 userid 哈希分桶</strong>，保证同一用户跨媒体全程在同一桶。</div></div>
+      <div class="split-card"><div class="split-card-hd" style="background:#fff7ed;color:#c2410c;">场景 B：有 deviceid 但无法映射到 userid</div><div class="split-card-body"><strong>流量：</strong>未登录/新设备用户（IDM 无法识别，约30%）<br>一个 userid 可能对应多个 deviceid（换机、多设备），用 deviceid 分流同一用户的多个设备可能落入不同桶，破坏桶间用户均匀性。<br><strong style="color:#c2410c;">结论：deviceid 哈希分桶（独立命名空间）</strong>，应用 Default 策略，不进主实验分析。</div></div>
+      <div class="split-card"><div class="split-card-hd" style="background:#f1f5f9;color:#475569;">场景 C：无法获取 deviceid</div><div class="split-card-body"><strong>流量：</strong>特殊设备（隐私模式、iOS 新设备未授权等）<br>无法建立任何稳定用户标识，无法分配到确定桶位。<br><strong style="color:#475569;">结论：走全局 Default 策略（历史最优策略兜底）</strong>，不计入任何实验组。</div></div>
+    </div>
+    <h3>userid 分流的核心理由总结</h3>
+    <table><thead><tr><th>评估维度</th><th>userid 分流</th><th>deviceid 分流</th><th>结论</th></tr></thead><tbody>
+      <tr><td><strong>实验纯净性</strong></td><td>同一用户跨媒体全程在同一桶，交叉污染为零</td><td>同一用户多设备可能落入不同桶，产生交叉污染</td><td><span class="tag tag-g">✓ userid</span></td></tr>
+      <tr><td><strong>均匀性</strong></td><td>userid 是 1:1 实体映射，hash 分桶绝对均匀</td><td>1个 userid 对应 N 个 deviceid，同一用户贡献多份票，破坏均匀性</td><td><span class="tag tag-g">✓ userid</span></td></tr>
+      <tr><td><strong>跨媒体度量</strong></td><td>支持跨媒体实验归因，可计算全网归因转化</td><td>仅支持单媒体内度量，无法跨媒体实验归因</td><td><span class="tag tag-g">✓ userid</span></td></tr>
+      <tr><td><strong>流量覆盖</strong></td><td>天渠 IDM 可识别 70%+（高于巨浪 60%）</td><td>理论覆盖更广，但实验准确性全部投入</td><td><span class="tag tag-y">权衡</span></td></tr>
+      <tr><td><strong>画像建设</strong></td><td>日志以 userid 为属性，直接对接用户层面数据</td><td>需额外 device-user 关联才能分析用户层面</td><td><span class="tag tag-g">✓ userid</span></td></tr>
+    </tbody></table>
+    <h3>分流方案设计全图</h3>
+    <div class="flow-chain">
+      <div class="flow-chain-item"><div class="fc-num">入口</div><div class="fc-body"><strong>媒体 RTA 请求下发：</strong>包含 deviceid（IDFA/OAID/IMEI等）+ RTAID + 媒体分桶编号</div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 1</div><div class="fc-body"><strong>ID Mapping 层</strong>（天渠 IDM）：deviceid → userid<br><span style="color:#16a34a;font-size:12.5px;">✔ 成功（70%+ 请求）：进入 userid 主分流通道</span><br><span style="color:#c2410c;font-size:12.5px;">✘ 失败（约30%）：进入 deviceid 备用分流路径</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 2A</div><div class="fc-body"><strong>主分流：userid 哈希分桶</strong><span class="fc-badge fc-new">主路</span><br><span style="color:#64748b;font-size:12.5px;">hash(userid) % 10 得到桶号 0-9，对应媒体固定分桶 1-10。同一用户在所有媒体、所有 RTAID 的分桶结果完全一致。</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 2B</div><div class="fc-body"><strong>备用分流：deviceid 哈希分桶（独立命名空间）</strong><span class="fc-badge" style="background:#fff7ed;color:#c2410c;">备用路</span><br><span style="color:#64748b;font-size:12.5px;">hash(deviceid) % 10 得到桶号，应用全局 Default 策略（不进实验分组）。单独上报备用路指标，不纳入主实验统计。</span></div></div>
+      <div class="flow-chain-item"><div class="fc-num">Step 3</div><div class="fc-body"><strong>分桶均匀性预验证</strong><span class="fc-badge fc-exist">质量保障</span><br><span style="color:#64748b;font-size:12.5px;">实验开跑前，各桶 pLTV 分布基本一致。某桶 TOP pLTV 用户占比偏差超过 3%，应重新检查 hash 函数和分层边界，确认均匀性后再开跑实验。</span></div></div>
+    </div>
+    <div class="callout cb-blue"><strong>最终分流方案摘要：</strong>以 <strong>userid 为主分流键</strong>（覆盖 70%+ 流量，保证实验纯净性、均匀性、跨媒体度量）；无法映射的 deviceid 备用分流并独立上报；无 deviceid 设备走 Default 策略兜底。未来 IDM 沉淀每提升 1%，直接转化为实验覆盖率提升。</div>
+  </section>
+
+  <!-- ========== RTA 实验架构重建 ========== -->
+
+  <section id="experiment">
+    <h2>实验架构：业务 A / B 独立实验命名空间</h2>
+
+    <h3>核心问题：业务 A 与业务 B 实验体系完全分离</h3>
+    <div class="callout cb-red">
+      <strong>当前痛点：</strong>主营业务 A 和业务 B 共用巨浪的业务 B 实验 ID，导致：① 任意 RTAID 的策略变更对两个业务均有影响；② 业务 A 无法接入宙斯实验平台（实验 ID 归属于业务 B）；③ 巨浪实验 ID 申请分离需求提出已久，迟迟未被支持。
+    </div>
+
+    <h3>目标架构：天渠内实验命名空间独立</h3>
+    <div class="exp-container">
+      <div class="exp-card">
+        <div class="exp-card-header biz-a">主营业务 A — 独立实验层</div>
+        <div class="exp-card-body">
+          <div class="exp-item"><div class="exp-dot dot-blue"></div><div><strong>独立实验 ID</strong>：业务 A 专属，可直接接入宙斯实验平台进行效果评估</div></div>
+          <div class="exp-item"><div class="exp-dot dot-blue"></div><div><strong>自分桶全媒体覆盖</strong>：含 OPPO/VIVO/荣耀等当前巨浪不支持的媒体，实验迭代无死角</div></div>
+          <div class="exp-item"><div class="exp-dot dot-blue"></div><div><strong>IDM 匹配率 70%+</strong>：天渠整合多方 IDM 能力，较巨浪提升 10%+，拉新流量覆盖更完整</div></div>
+          <div class="exp-item"><div class="exp-dot dot-blue"></div><div><strong>全量 RTA 请求数据可获取</strong>：不受巨浪数据隔离限制，支持全网设备用户画像建设</div></div>
+          <div class="exp-item"><div class="exp-dot dot-blue"></div><div><strong>独立增量评估对照组</strong>：业务 A 独立设置增量实验，不受业务 B 策略干扰</div></div>
+        </div>
+      </div>
+      <div class="exp-card">
+        <div class="exp-card-header biz-b">业务 B — 独立实验层</div>
+        <div class="exp-card-body">
+          <div class="exp-item"><div class="exp-dot dot-purple"></div><div><strong>独立实验 ID</strong>：业务 B 专属，历史实验逻辑不受迁移影响</div></div>
+          <div class="exp-item"><div class="exp-dot dot-purple"></div><div><strong>桶位隔离</strong>：与业务 A 完全独立的分桶空间，策略变更不互相干扰</div></div>
+          <div class="exp-item"><div class="exp-dot dot-purple"></div><div><strong>现有分桶逻辑保持稳定</strong>：业务 B 以拉活为主，IDM 策略维持现状，逐步优化</div></div>
+          <div class="exp-item"><div class="exp-dot dot-purple"></div><div><strong>实验历史数据查询保留</strong>：业务 B 原实验 ID 数据作为历史基线，支持回溯查询</div></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>天渠内部实验分流设计（对应图2流程步骤）</h3>
+    <div class="flow-chain">
+      <div class="flow-chain-item">
+        <div class="fc-num">Step 3</div>
+        <div class="fc-body">
+          <strong>设备号转 user_id</strong>
+          <span class="fc-badge fc-exist">已有</span>
+          天渠整合多方 IDM 能力，匹配率目标 70%+
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">Step 4</div>
+        <div class="fc-body">
+          <strong>RTAID 请求拆分 → 业务线路由</strong>
+          <span class="fc-badge fc-new">增强</span>
+          在 RTAID 拆分后，根据 RTAID 所属业务线（A or B），将请求路由至不同实验命名空间，确保后续分桶在各自的实验空间内执行
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">Step 5</div>
+        <div class="fc-body">
+          <strong>自分桶实验分流 — 业务 A / B 独立桶位</strong>
+          <span class="fc-badge fc-new">增强</span>
+          业务 A 和业务 B 分别维护独立的桶位空间（如 A 使用 0-49 桶，B 使用 50-99 桶，或按命名空间隔离）。桶位分配基于 user_id hash，保证同一用户在 A/B 业务线内分桶稳定
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">Step 6</div>
+        <div class="fc-body">
+          <strong>增量评估实验分流 — 业务 A 独立增量对照</strong>
+          <span class="fc-badge fc-new">增强</span>
+          业务 A 独立设置增量实验对照组（实验组 vs holdout 组），评估 RTA 整体增量价值。与业务 B 增量评估完全隔离，互不干扰
+        </div>
+      </div>
+      <div class="flow-chain-item">
+        <div class="fc-num">Step 7~9</div>
+        <div class="fc-body">
+          <strong>人群包/标签/溢价命中判定</strong>
+          <span class="fc-badge fc-exist">已有</span>
+          在各自实验分组内执行，结果归属于对应业务线的实验记录，支持分业务线独立效果报表
+        </div>
+      </div>
+    </div>
+
+    <h3>实验迁移冷启动方案</h3>
+    <div class="callout cb-purple">
+      <strong>数据连续性保障：</strong>业务 A 切换至独立实验 ID 后，历史实验数据将出现断层。建议实施冷启动预跑期：在正式切换独立实验 ID 前，先以 shadow 模式预跑 1-2 周，同步记录新旧实验 ID 的分桶结果，验证一致性后再正式切换，减少历史数据断层的影响。
+    </div>
+  </section>
+
+  <!-- ========== 考核指标体系 ========== -->
+  <section id="metrics">
+    <h2>考核指标体系（拉新任务）</h2>
+    <p>实验效果评估分三层指标体系，推全决策必须同时满足护栏指标，在满足前提下追求北极星指标最大化。</p>
+    <div class="metric-block">
+      <div class="metric-hd guard">&#9888; 护栏指标 — 推全必要条件，不达标则终止推全</div>
+      <div class="metric-chips">
+        <span class="mchip red">ROI_0 ≥ 空桶</span>
+        <span class="mchip red">ROI_0 ≥ 推全桶</span>
+        <span style="font-size:12px;color:#64748b;padding:4px 6px;">ROI_0 保留两位小数，必须同时超过空桶和当前推全桶，任意一个不满足则终止推全</span>
+      </div>
+    </div>
+    <div class="metric-block">
+      <div class="metric-hd north">&#9733; 北极星指标 — 追求最大化，选择最优桶</div>
+      <div class="metric-chips">
+        <span class="mchip blue">LTV_0 越大越好</span>
+        <span style="font-size:12px;color:#64748b;padding:4px 6px;">与上一轮推全桶、空桶及历史各轮实验桶均对比，取历史局最优推全桶</span>
+      </div>
+    </div>
+    <div class="metric-block">
+      <div class="metric-hd watch">&#128269; 关注指标 — 全面跟踪实验健康度与业务战果</div>
+      <div class="metric-chips">
+        <span class="mchip gray">展示数</span>
+        <span class="mchip gray">点击数</span>
+        <span class="mchip gray">消耗</span>
+        <span class="mchip purple">会员数</span>
+        <span class="mchip purple">B会员数</span>
+        <span class="mchip purple">B浓度</span>
+        <span class="mchip blue">CAC</span>
+        <span class="mchip blue">人均LTV0</span>
+        <span class="mchip blue">人均LTV3</span>
+        <span class="mchip blue">人均LTV7</span>
+        <span class="mchip blue">ROI3</span>
+        <span class="mchip blue">ROI_7</span>
+        <span class="mchip gray">买家数</span>
+        <span class="mchip gray">买家转化率</span>
+      </div>
+    </div>
+    <h3>指标定义与推全决策用途</h3>
+    <table>
+      <thead><tr><th>指标</th><th>定义</th><th>推全决策用途</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ROI_0</strong></td><td>实验期内（通常 7-14 天）目标转化收益 / 广告消耗，保留两位小数</td><td>护栏指标，两个比较均必须达标（超空桶 AND 超推全桶）</td></tr>
+        <tr><td><strong>LTV_0</strong></td><td>用户在实验期内实际贡献的生命周期价值（T+0 口径）</td><td>北极星，全部实验桶里取 LTV_0 最大的桶展开调权推全策略</td></tr>
+        <tr><td><strong>B浓度</strong></td><td>实验期内激活/新增 B 会员占总换山用户的比例</td><td>监控指标，分桶间 B 浓度差异超过 5% 需核查分流均匀性</td></tr>
+        <tr><td><strong>CAC</strong></td><td>获取单个新客成本 = 消耗 / 新客数量</td><td>关注指标，需在 ROI 控制范围内尽量优化</td></tr>
+        <tr><td><strong>ROI_3 / ROI_7</strong></td><td>T+3 / T+7 回收 ROI，评估用户长期价值贡献</td><td>关注指标，辅助验证 LTV 预估模型就年分层准确性</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ========== 风险与回滚 ========== -->
+  <section id="risk">
+    <h2>风险识别与回滚方案</h2>
+
+    <div class="risk-grid">
+      <div class="risk-card">
+        <div class="risk-card-header">
+          <span>QPS 突增 / 服务稳定性</span>
+          <span class="risk-level risk-high">高风险</span>
+        </div>
+        <div class="risk-card-body">
+          <div class="risk-row"><div class="risk-label">描述</div><div class="risk-val">新媒体切入后天渠承载 QPS 骤升，若扩容不足可能引发超时/错误率上升，影响参竞结果</div></div>
+          <div class="risk-row"><div class="risk-label">缓解</div><div class="risk-val">迁移前完成 1.5× 峰值压测；每次切量 ≤10%，观察 RT p99 + 错误率 24h 无异常后再扩量</div></div>
+          <div class="risk-row"><div class="risk-label">回滚</div><div class="risk-val">每个媒体维护流量灰度开关，异常时<strong>分钟级</strong>将流量切回巨浪，不影响广告主出价结果</div></div>
+        </div>
+      </div>
+
+      <div class="risk-card">
+        <div class="risk-card-header">
+          <span>人群包迁移命中率偏差</span>
+          <span class="risk-level risk-high">高风险</span>
+        </div>
+        <div class="risk-card-body">
+          <div class="risk-row"><div class="risk-label">描述</div><div class="risk-val">400+ 奥格人群包迁移到天渠标签体系后，因标签口径/更新时间差异，命中率可能发生变化，影响定向效果</div></div>
+          <div class="risk-row"><div class="risk-label">缓解</div><div class="risk-val">迁移前进行 A/B 双跑验证（奥格 vs 天渠），设置命中率 diff 告警阈值（建议 ≤5%），超出则暂停迁移</div></div>
+          <div class="risk-row"><div class="risk-label">回滚</div><div class="risk-val">保留奥格人群包双跑 1 个月作为对照；迁移按人群包批次进行，单批次异常不影响其他批次</div></div>
+        </div>
+      </div>
+
+      <div class="risk-card">
+        <div class="risk-card-header">
+          <span>实验分离数据断层</span>
+          <span class="risk-level risk-mid">中风险</span>
+        </div>
+        <div class="risk-card-body">
+          <div class="risk-row"><div class="risk-label">描述</div><div class="risk-val">业务 A 切换独立实验 ID 后，新旧实验 ID 的历史数据不连续，影响效果趋势判断</div></div>
+          <div class="risk-row"><div class="risk-label">缓解</div><div class="risk-val">正式切换前预跑 1-2 周冷启动期（shadow 模式），验证新旧 ID 分桶一致性后再切换</div></div>
+          <div class="risk-row"><div class="risk-label">回滚</div><div class="risk-val">业务 B 实验 ID 作为历史基线保留查询；切换节点在数据仓库中打标，支持历史数据 join 分析</div></div>
+        </div>
+      </div>
+
+      <div class="risk-card">
+        <div class="risk-card-header">
+          <span>迁移期双跑成本上升</span>
+          <span class="risk-level risk-mid">中风险</span>
+        </div>
+        <div class="risk-card-body">
+          <div class="risk-row"><div class="risk-label">描述</div><div class="risk-val">迁移期间天渠扩容成本 + 巨浪/奥格费用并存，短期成本不降反升</div></div>
+          <div class="risk-row"><div class="risk-label">缓解</div><div class="risk-val">控制迁移节奏，3-4 个月完成第一批切换（此时可停止对应媒体的巨浪/奥格计费），按实际节省 ROI 动态调整迁移速度</div></div>
+          <div class="risk-row"><div class="risk-label">回滚</div><div class="risk-val">每批次迁移均可独立回滚，不强制全量切换；如 ROI 不及预期可暂停某批次迁移</div></div>
+        </div>
+      </div>
+
+      <div class="risk-card">
+        <div class="risk-card-header">
+          <span>腾讯广告数据安全合规</span>
+          <span class="risk-level risk-mid">中风险</span>
+        </div>
+        <div class="risk-card-body">
+          <div class="risk-row"><div class="risk-label">描述</div><div class="risk-val">业务 B 主体与腾讯广告存在竞争关系，联盟点位数据合规性确认可能周期较长，影响第三批迁移</div></div>
+          <div class="risk-row"><div class="risk-label">缓解</div><div class="risk-val">在第一批迁移启动时同步开展法务/商务对接，争取在第二批完成前拿到数据合规授权</div></div>
+          <div class="risk-row"><div class="risk-label">回滚</div><div class="risk-val">该批次迁移失败不影响整体降本目标（第一批+第二批已覆盖主要流量）；该部分流量维持巨浪现状</div></div>
+        </div>
+      </div>
+
+      <div class="risk-card">
+        <div class="risk-card-header">
+          <span>直连媒体协议适配</span>
+          <span class="risk-level risk-low">低风险</span>
+        </div>
+        <div class="risk-card-body">
+          <div class="risk-row"><div class="risk-label">描述</div><div class="risk-val">不同媒体的 RTA 直连协议可能存在差异，联调工作量不确定</div></div>
+          <div class="risk-row"><div class="risk-label">缓解</div><div class="risk-val">优先选择 Tanx 标准化接入大媒体；直连小媒体优先选择已有合作经验的渠道（OPPO/VIVO 等已有参考）</div></div>
+          <div class="risk-row"><div class="risk-label">回滚</div><div class="risk-val">直连联调期间流量不切换，完全联调测试通过后再切量，影响范围可控</div></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>整体回滚策略</h3>
+    <div class="callout cb-blue">
+      <strong>分层回滚机制：</strong><br>
+      <strong>L1 媒体级回滚</strong>：单媒体切量异常 → 该媒体流量切回巨浪，其他媒体不受影响（分钟级）<br>
+      <strong>L2 批次级回滚</strong>：同批次多媒体异常 → 整批次回滚，进入问题排查阶段（小时级）<br>
+      <strong>L3 全量回滚</strong>：天渠侧系统性故障 → 全量流量切回巨浪，天渠进入修复模式（已有巨浪保底）<br>
+      <br>
+      <strong>关键前提：</strong>在整个迁移期间，巨浪作为保底链路保持可用状态。直到第三批迁移验证稳定后，再正式启动巨浪下线流程。
+    </div>
+  </section>
+
+</main>
+</div>
+</body>
+</html>

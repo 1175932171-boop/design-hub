@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>心情心电图</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      color: #1a1a2e;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 5px;
+      color: #d32f2f;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: #999;
+      letter-spacing: 3px;
+      margin-bottom: 28px;
+    }
+    .chart-wrapper {
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 18px 24px 18px 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body>
+  <h1>♥ 心情心电图</h1>
+  <p class="subtitle">MOOD ECG · CAREER TIMELINE</p>
+  <div class="chart-wrapper">
+    <canvas id="ecg" width="1040" height="480"></canvas>
+  </div>
+
+<script>
+(function () {
+const canvas = document.getElementById('ecg');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const ml = 95, mr = 40, mt = 50, mb = 115;
+const pw = W - ml - mr;
+const ph = H - mt - mb;
+
+function xOf(r) { return ml + r * pw; }
+function yOf(m) { return mt + (m / 4) * ph; }
+
+// ── Mood meta ────────────────────────────────────────────────────────────────
+const moodEmoji = ['🤩','😊','😐','😔','😢'];
+const moodName  = ['惊喜','开心','一般','低落','沮丧'];
+const moodColor = ['#e91e63','#ff9800','#2196f3','#5c6bc0','#7b1fa2'];
+
+// ── Timeline data ────────────────────────────────────────────────────────────
+const dataPoints = [
+  { label: '在前司\n第一阶段', xRatio: 0.08, mood: 0 },
+  { label: '在前司\n第二阶段', xRatio: 0.20, mood: 1 },
+  { label: '在前司\n第三阶段', xRatio: 0.33, mood: 2 },
+  { label: '入职前',           xRatio: 0.50, mood: 3 },
+  { label: '入职阿里后',       xRatio: 0.64, mood: 0 },
+  { label: '遇到困难时',       xRatio: 0.78, mood: 3 },
+  { label: '现在',             xRatio: 0.87, mood: 1.5, displayMood: 1 },
+];
+
+// ── Phase bands ──────────────────────────────────────────────────────────────
+const phases = [
+  { label: '在 前 司',   x1: 0.00, x2: 0.41, color: 'rgba(33,150,243,0.06)'   },
+  { label: '入 职 前',   x1: 0.41, x2: 0.57, color: 'rgba(156,39,176,0.06)'   },
+  { label: '入职阿里后', x1: 0.57, x2: 0.71, color: 'rgba(233,30,99,0.06)'    },
+  { label: '遇到困难时', x1: 0.71, x2: 0.85, color: 'rgba(244,67,54,0.07)'    },
+  { label: '现 在',      x1: 0.85, x2: 1.00, color: 'rgba(0,188,212,0.06)'    },
+];
+
+// ── White canvas fill ────────────────────────────────────────────────────────
+ctx.fillStyle = '#ffffff';
+ctx.fillRect(0, 0, W, H);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Phase background bands
+// ─────────────────────────────────────────────────────────────────────────────
+phases.forEach((p, pi) => {
+  const px1 = xOf(p.x1), px2 = xOf(p.x2);
+  ctx.fillStyle = p.color;
+  ctx.fillRect(px1, mt, px2 - px1, ph);
+  if (pi > 0) {
+    ctx.beginPath();
+    ctx.setLineDash([4, 6]);
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    ctx.moveTo(px1, mt); ctx.lineTo(px1, mt + ph);
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.save();
+  ctx.font = 'bold 13px PingFang SC, Microsoft YaHei, sans-serif';
+  ctx.fillStyle = '#555';
+  ctx.textAlign = 'center';
+  ctx.fillText(p.label, (px1 + px2) / 2, mt + ph + 20);
+  ctx.restore();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. Horizontal grid lines
+// ─────────────────────────────────────────────────────────────────────────────
+for (let i = 0; i < 5; i++) {
+  const y = yOf(i);
+  ctx.beginPath();
+  ctx.setLineDash([4, 8]);
+  ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+  ctx.lineWidth = 1;
+  ctx.moveTo(ml, y); ctx.lineTo(ml + pw, y);
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. Y-axis emoji + mood name
+// ─────────────────────────────────────────────────────────────────────────────
+for (let i = 0; i < 5; i++) {
+  const y = yOf(i);
+  ctx.save();
+  ctx.font = '20px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(moodEmoji[i], ml - 60, y);
+  ctx.restore();
+
+  ctx.save();
+  ctx.font = 'bold 12px PingFang SC, Microsoft YaHei, sans-serif';
+  ctx.fillStyle = moodColor[i];
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(moodName[i], ml - 8, y);
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. Axes
+// ─────────────────────────────────────────────────────────────────────────────
+ctx.beginPath();
+ctx.strokeStyle = '#333';
+ctx.lineWidth = 1.5;
+ctx.moveTo(ml, mt - 8); ctx.lineTo(ml, mt + ph);
+ctx.lineTo(ml + pw + 8, mt + ph);
+ctx.stroke();
+// Y arrow
+ctx.beginPath(); ctx.fillStyle = '#333';
+ctx.moveTo(ml, mt - 14); ctx.lineTo(ml - 5, mt); ctx.lineTo(ml + 5, mt);
+ctx.closePath(); ctx.fill();
+// X arrow
+ctx.beginPath();
+ctx.moveTo(ml + pw + 14, mt + ph);
+ctx.lineTo(ml + pw, mt + ph - 5);
+ctx.lineTo(ml + pw, mt + ph + 5);
+ctx.closePath(); ctx.fill();
+// Axis captions
+ctx.save();
+ctx.font = '12px PingFang SC, sans-serif';
+ctx.fillStyle = '#666';
+ctx.textAlign = 'center';
+ctx.translate(ml - 83, mt + ph / 2);
+ctx.rotate(-Math.PI / 2);
+ctx.fillText('心 情', 0, 0);
+ctx.restore();
+ctx.save();
+ctx.font = '12px PingFang SC, sans-serif';
+ctx.fillStyle = '#666';
+ctx.textAlign = 'center';
+ctx.fillText('时  间  轴', ml + pw / 2, mt + ph + 48);
+ctx.restore();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Generate ECG waveform points
+// ─────────────────────────────────────────────────────────────────────────────
+function addBlip(wave, cx, y) {
+  wave.push({x: cx - 15, y});
+  wave.push({x: cx - 11, y: y - 7});   // P peak
+  wave.push({x: cx - 7,  y});
+  wave.push({x: cx - 3,  y: y + 5});   // Q dip
+  wave.push({x: cx,      y: y - 18});  // R spike
+  wave.push({x: cx + 4,  y: y + 7});   // S dip
+  wave.push({x: cx + 8,  y});
+  wave.push({x: cx + 14, y: y - 9});   // T wave
+  wave.push({x: cx + 20, y});
+}
+
+function generateECG() {
+  const wave = [];
+  wave.push({x: ml + 4, y: yOf(dataPoints[0].mood)});
+
+  for (let i = 0; i < dataPoints.length; i++) {
+    const d  = dataPoints[i];
+    const x  = xOf(d.xRatio);
+    const y  = yOf(d.mood);
+
+    if (i < dataPoints.length - 1) {
+      const nxt  = dataPoints[i + 1];
+      const nx   = xOf(nxt.xRatio);
+      const ny   = yOf(nxt.mood);
+      const segW = nx - x;
+      const flatFrac  = 0.56;
+      const flatEnd   = x + segW * flatFrac;
+      const flatZoneW = flatEnd - x;
+
+      const numBlips = Math.max(1, Math.floor(flatZoneW / 42));
+      wave.push({x, y});
+      for (let b = 0; b < numBlips; b++) {
+        const cx = x + flatZoneW * (b + 0.5) / numBlips;
+        addBlip(wave, cx, y);
+      }
+      wave.push({x: flatEnd, y});
+
+      const dy    = ny - y;
+      const spikeW = segW * (1 - flatFrac) * 0.46;
+      wave.push({x: flatEnd + spikeW * 0.10, y: y  + dy * 0.12});
+      wave.push({x: flatEnd + spikeW * 0.32, y: ny - dy * 0.28});
+      wave.push({x: flatEnd + spikeW * 0.62, y: ny + dy * 0.10});
+      wave.push({x: flatEnd + spikeW,        y: ny});
+      const tb = flatEnd + spikeW;
+      wave.push({x: tb + 9,  y: ny - dy * 0.07});
+      wave.push({x: tb + 18, y: ny});
+      wave.push({x: nx - 4,  y: ny});
+
+    } else {
+      wave.push({x, y});
+      addBlip(wave, x + 30, y);
+      wave.push({x: x + 55, y});                    // brief flat after blip
+      wave.push({x: xOf(0.97), y: y - ph * 0.10}); // gradual upward slope
+    }
+  }
+  return wave;
+}
+
+const wavePts = generateECG();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. Draw ECG line — single crisp pass, no blur
+// ─────────────────────────────────────────────────────────────────────────────
+ctx.save();
+ctx.strokeStyle = '#d32f2f';
+ctx.lineWidth   = 2;
+ctx.lineJoin    = 'miter';
+ctx.lineCap     = 'butt';
+ctx.beginPath();
+ctx.moveTo(wavePts[0].x, wavePts[0].y);
+for (let i = 1; i < wavePts.length; i++) ctx.lineTo(wavePts[i].x, wavePts[i].y);
+ctx.stroke();
+ctx.restore();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. Dot markers + annotation labels
+// ─────────────────────────────────────────────────────────────────────────────
+dataPoints.forEach(d => {
+  const x   = xOf(d.xRatio);
+  const y   = yOf(d.mood);
+  const dm  = d.displayMood !== undefined ? d.displayMood : Math.round(d.mood);
+  const col = moodColor[dm];
+
+  // Filled dot with white center
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.fillStyle = col;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+
+  // Labels
+  const isTop     = d.mood <= 2;
+  const lines     = d.label.split('\n');
+  const lineH     = 15;
+  const baseOffset = isTop ? 22 : -28;
+
+  ctx.save();
+  ctx.font      = 'bold 11px PingFang SC, Microsoft YaHei, sans-serif';
+  ctx.fillStyle = col;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  lines.forEach((ln, li) => {
+    ctx.fillText(ln, x, y + baseOffset + li * lineH);
+  });
+  // Emoji tag
+  ctx.font = '15px serif';
+  const tagY = isTop
+    ? y + baseOffset + lines.length * lineH + 3
+    : y + baseOffset - lineH - 4;
+  ctx.fillText(moodEmoji[dm], x, tagY);
+  ctx.restore();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. Rising trend dashed arrow after last point
+// ─────────────────────────────────────────────────────────────────────────────
+(function() {
+  const lastDP = dataPoints[dataPoints.length - 1];
+  const lx = xOf(0.97);
+  const ly = yOf(lastDP.mood) - ph * 0.10;
+  const ex = lx + 36, ey = ly - ph * 0.10;
+  ctx.save();
+  ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = '#4caf50';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(lx, ly); ctx.lineTo(ex, ey);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Arrow head
+  const angle = Math.atan2(ey - ly, ex - lx);
+  ctx.fillStyle = '#4caf50';
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - 10 * Math.cos(angle - 0.4), ey - 10 * Math.sin(angle - 0.4));
+  ctx.lineTo(ex - 10 * Math.cos(angle + 0.4), ey - 10 * Math.sin(angle + 0.4));
+  ctx.closePath(); ctx.fill();
+  // Label
+  ctx.font = 'bold 11px PingFang SC, Microsoft YaHei, sans-serif';
+  ctx.fillStyle = '#4caf50';
+  ctx.textAlign = 'left';
+  ctx.fillText('逐步上扬 ↗', ex + 4, ey);
+  ctx.restore();
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. Watermark
+// ─────────────────────────────────────────────────────────────────────────────
+ctx.save();
+ctx.font      = '10px PingFang SC, sans-serif';
+ctx.fillStyle = 'rgba(0,0,0,0.15)';
+ctx.textAlign = 'right';
+ctx.fillText('MOOD ECG  ·  My Career Journey', W - 10, H - 6);
+ctx.restore();
+})();
+</script>
+</body>
+</html>

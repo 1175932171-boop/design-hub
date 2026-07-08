@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天渠 RTA 管理平台 · PRD 开发文档 v2.3</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: #f5f7fa; color: #333; font-size: 14px; line-height: 1.7; }
+
+/* ===== 顶部导航 ===== */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; height: 60px;
+  background: #1a2332; z-index: 200;
+  display: flex; align-items: center; padding: 0 32px; gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.header-logo { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: .5px; }
+.header-badge {
+  padding: 2px 10px; background: rgba(22,119,255,.3); color: #91caff;
+  border: 1px solid rgba(22,119,255,.4); border-radius: 12px; font-size: 11.5px; font-weight: 600;
+}
+.header-meta { margin-left: auto; font-size: 12px; color: #8899aa; }
+
+/* ===== 侧边导航 ===== */
+.sidebar {
+  position: fixed; top: 60px; left: 0; bottom: 0; width: 230px;
+  background: #fff; border-right: 1px solid #e8ecf0;
+  overflow-y: auto; padding: 20px 0;
+  box-shadow: 2px 0 6px rgba(0,0,0,.04);
+}
+.nav-section { padding: 0 16px; margin-bottom: 4px; }
+.nav-section-title {
+  font-size: 11px; font-weight: 700; color: #aaa; letter-spacing: 1px;
+  text-transform: uppercase; padding: 12px 8px 4px;
+}
+.nav-item {
+  display: block; padding: 7px 12px; border-radius: 6px;
+  font-size: 13px; color: #555; cursor: pointer;
+  text-decoration: none; transition: all .15s;
+  margin-bottom: 1px;
+}
+.nav-item:hover { background: #f0f5ff; color: #1677ff; }
+.nav-item.active { background: #e6f4ff; color: #1677ff; font-weight: 600; }
+.nav-item.sub { padding-left: 24px; font-size: 12.5px; color: #777; }
+.nav-item.sub:hover { color: #1677ff; }
+
+/* ===== 主内容区 ===== */
+.main { margin-top: 60px; margin-left: 230px; padding: 32px 40px; min-height: calc(100vh - 60px); }
+
+/* ===== 通用区块 ===== */
+.section { margin-bottom: 48px; }
+.section-anchor { display: block; height: 1px; margin-top: -80px; padding-top: 80px; }
+
+h1.page-title {
+  font-size: 28px; font-weight: 800; color: #111; margin-bottom: 8px;
+}
+.page-subtitle { font-size: 14px; color: #888; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid #e8ecf0; }
+.page-subtitle span { color: #1677ff; font-weight: 600; }
+
+h2.sec-title {
+  font-size: 20px; font-weight: 700; color: #1a2332;
+  margin-bottom: 4px; padding-bottom: 10px;
+  border-bottom: 3px solid #1677ff;
+  display: flex; align-items: center; gap: 10px;
+}
+h2.sec-title .sec-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #1677ff; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+h3.sub-title {
+  font-size: 16px; font-weight: 700; color: #333; margin: 24px 0 12px;
+  padding-left: 12px; border-left: 4px solid #1677ff;
+}
+h4.mini-title {
+  font-size: 14px; font-weight: 700; color: #444; margin: 18px 0 8px;
+}
+
+p { margin-bottom: 10px; color: #444; }
+
+/* ===== 卡片 ===== */
+.card {
+  background: #fff; border-radius: 8px;
+  border: 1px solid #e8ecf0; padding: 20px 24px;
+  margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.card-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.card-col { flex: 1; min-width: 200px; }
+
+/* ===== 信息提示框 ===== */
+.tip {
+  padding: 12px 16px; border-radius: 6px; margin-bottom: 14px;
+  font-size: 13px; display: flex; align-items: flex-start; gap: 10px;
+}
+.tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.tip.tip-info { background: #e6f4ff; border: 1px solid #91caff; color: #096dd9; }
+.tip.tip-warn { background: #fffbe6; border: 1px solid #ffe58f; color: #7c4a00; }
+.tip.tip-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #237804; }
+.tip.tip-error { background: #fff2f0; border: 1px solid #ffccc7; color: #cf1322; }
+
+/* ===== 表格 ===== */
+.doc-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+.doc-table th {
+  background: #f0f3f8; padding: 10px 14px; text-align: left;
+  font-weight: 600; color: #444; border-bottom: 2px solid #dce4ef;
+  white-space: nowrap;
+}
+.doc-table td {
+  padding: 10px 14px; border-bottom: 1px solid #f0f2f5; vertical-align: top; color: #444;
+}
+.doc-table tbody tr:hover td { background: #f8faff; }
+.doc-table .req { color: #f56c2a; font-weight: 700; }
+.doc-table .opt { color: #aaa; }
+.doc-table .field-name { font-family: monospace; background: #f5f5f5; padding: 1px 6px; border-radius: 3px; color: #c7254e; }
+
+/* ===== 字段必选标签 ===== */
+.tag-req { display: inline-block; padding: 1px 6px; background: #fff2f0; color: #cf1322; border: 1px solid #ffccc7; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 4px; }
+.tag-opt { display: inline-block; padding: 1px 6px; background: #f5f5f5; color: #888; border: 1px solid #d9d9d9; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 4px; }
+.tag-sys { display: inline-block; padding: 1px 6px; background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 4px; }
+
+/* ===== 状态标签 ===== */
+.status { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.status.running { background: rgba(82,196,26,.10); color: #389e0d; border: 1px solid #b7eb8f; }
+.status.pushed  { background: rgba(24,144,255,.10); color: #096dd9; border: 1px solid #91caff; }
+.status.offline { background: rgba(207,19,34,.06);  color: #cf1322; border: 1px solid #ffa39e; }
+.s-dot { width: 6px; height: 6px; border-radius: 50%; background: #52c41a; animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.65)} }
+
+/* ===== 操作按钮文档 ===== */
+.op-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.op-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; background: #fafbfc; border: 1px solid #e8ecf0; border-radius: 6px; }
+.op-name { font-size: 13px; font-weight: 700; color: #1677ff; min-width: 80px; flex-shrink: 0; }
+.op-name.red { color: #cf1322; }
+.op-name.green { color: #389e0d; }
+.op-desc { font-size: 13px; color: #555; }
+
+/* ===== 交互流程步骤 ===== */
+.flow-steps { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 20px; }
+.flow-step { display: flex; align-items: flex-start; gap: 12px; }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #1677ff; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+}
+.step-content { flex: 1; padding-top: 2px; font-size: 13.5px; color: #333; }
+.step-content strong { color: #111; }
+.step-line { width: 2px; background: #dce4ef; margin-left: 11px; height: 14px; }
+
+/* ===== 分桶可视化说明 ===== */
+.bucket-vis { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+.bk { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; border: 2px solid transparent; }
+.bk-blank  { background: #f5f5f5; border-color: #d9d9d9; color: #888; }
+.bk-exp    { background: #e6f7ff; border-color: #91d5ff; color: #0050b3; }
+.bk-ctrl   { background: #fff7e6; border-color: #ffd591; color: #ad4e00; }
+.bk-win    { background: #f6ffed; border-color: #52c41a; color: #237804; }
+.bk-next   { background: #e6f4ff; border-color: #1677ff; border-style: dashed; color: #1677ff; }
+
+/* ===== 约束规则 ===== */
+.rule-box { border: 1px solid #ffe58f; background: #fffbe6; border-radius: 6px; padding: 14px 18px; margin-bottom: 14px; }
+.rule-title { font-size: 13px; font-weight: 700; color: #ad6800; margin-bottom: 8px; }
+.rule-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.rule-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #5c3d00; }
+.rule-list li::before { content: '›'; color: #fa8c16; font-weight: 700; flex-shrink: 0; }
+
+/* ===== 页面模块概览卡片 ===== */
+.module-overview { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 28px; }
+.mo-card {
+  flex: 1; min-width: 200px; padding: 18px 20px;
+  background: #fff; border-radius: 8px; border: 1px solid #e8ecf0;
+  border-top: 4px solid #1677ff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.mo-card:nth-child(2) { border-top-color: #ff4d4f; }
+.mo-card:nth-child(3) { border-top-color: #52c41a; }
+.mo-title { font-size: 15px; font-weight: 700; color: #1a2332; margin-bottom: 6px; }
+.mo-desc { font-size: 12.5px; color: #777; line-height: 1.7; }
+
+/* ===== 分隔线 ===== */
+.divider { height: 1px; background: #e8ecf0; margin: 28px 0; }
+
+/* ===== 代码块 ===== */
+.code-block { background: #f0f3f8; border: 1px solid #dce4ef; border-radius: 6px; padding: 12px 16px; font-family: monospace; font-size: 13px; color: #333; margin-bottom: 14px; white-space: pre-wrap; }
+
+/* ===== 回到顶部 ===== */
+.back-top {
+  position: fixed; bottom: 32px; right: 32px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #1677ff; color: #fff; border: none;
+  font-size: 18px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(22,119,255,.4);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.back-top:hover { background: #0d68e0; transform: translateY(-2px); }
+
+/* ===== 变更记录 ===== */
+.changelog-item { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+.cl-date { font-size: 12px; color: #aaa; white-space: nowrap; min-width: 90px; padding-top: 2px; }
+.cl-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; margin-top: 1px; }
+.cl-feat { background: #e6f4ff; color: #096dd9; border: 1px solid #91caff; }
+.cl-fix  { background: #fff7e6; color: #d46b08; border: 1px solid #ffd591; }
+.cl-text { font-size: 13px; color: #444; }
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部 ===== -->
+<div class="header">
+  <div class="header-logo">天渠 RTA 管理平台</div>
+  <div class="header-badge">PRD 开发文档</div>
+  <div class="header-meta">v2.3 &nbsp;·&nbsp; 2026-07-02</div>
+</div>
+
+<!-- ===== 侧边导航 ===== -->
+<nav class="sidebar">
+  <div class="nav-section">
+    <div class="nav-section-title">概览</div>
+    <a class="nav-item" href="#overview">文档说明</a>
+    <a class="nav-item" href="#arch">整体架构</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">页面模块</div>
+    <a class="nav-item" href="#rtaid">1. RTAID 管理</a>
+    <a class="nav-item sub" href="#rtaid-list">列表页</a>
+    <a class="nav-item sub" href="#rtaid-modal">新增/编辑弹窗</a>
+    <a class="nav-item" href="#exp">2. RTA 实验管理</a>
+    <a class="nav-item sub" href="#exp-list">实验列表</a>
+    <a class="nav-item sub" href="#exp-modal">新建/编辑实验</a>
+    <a class="nav-item sub" href="#exp-report">实验报告</a>
+    <a class="nav-item sub" href="#exp-promote">扩桶申请</a>
+    <a class="nav-item sub" href="#exp-auto">自动扩桶</a>
+    <a class="nav-item sub" href="#exp-version">版本历史</a>
+    <a class="nav-item" href="#strategy">3. RTA 策略管理</a>
+    <a class="nav-item sub" href="#strategy-list">策略列表</a>
+    <a class="nav-item sub" href="#strategy-modal">新建/编辑策略</a>
+    <a class="nav-item sub" href="#strategy-detail">策略详情</a>
+    <a class="nav-item sub" href="#strategy-version">版本日志弹窗</a>
+    <a class="nav-item sub" href="#strategy-online">上线校验弹窗</a>
+    <a class="nav-item" href="#crowd-selection">4. 人群圈选机制</a>
+    <a class="nav-item sub" href="#crowd-tag-system">标签体系</a>
+    <a class="nav-item sub" href="#crowd-flow">圈选全流程</a>
+    <a class="nav-item sub" href="#crowd-did-mapping">DeviceID 映射</a>
+    <a class="nav-item sub" href="#crowd-rta-hitcheck">RTA命中判断</a>
+    <a class="nav-item sub" href="#crowd-constraints">关键约束</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">交互规则</div>
+    <a class="nav-item" href="#constraints">全局约束</a>
+    <a class="nav-item" href="#approval">审批流程</a>
+    <a class="nav-item sub" href="#approval-overview">通用节点说明</a>
+    <a class="nav-item sub" href="#approval-strategy">策略工作流</a>
+    <a class="nav-item sub" href="#approval-exp">实验工作流</a>
+    <a class="nav-item sub" href="#approval-state">审批状态机</a>
+    <a class="nav-item" href="#changelog">变更记录</a>
+  </div>
+</nav>
+
+<!-- ===== 主内容 ===== -->
+<main class="main">
+
+  <!-- ===== 文档说明 ===== -->
+  <span class="section-anchor" id="overview"></span>
+  <h1 class="page-title">天渠 RTA 管理平台 · PRD 开发文档</h1>
+  <p class="page-subtitle">
+    版本 <span>v2.3</span> &nbsp;|&nbsp; 更新日期 <span>2026-07-02</span> &nbsp;|&nbsp;
+    文档作者 <span>panda</span> &nbsp;|&nbsp; 状态 <span>正式</span>
+  </p>
+
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">0</span>文档说明</h2>
+    <div class="card">
+      <h3 class="sub-title" style="margin-top:0">背景与目标</h3>
+      <p>天渠 RTA（Real-Time Advertising）管理平台是1688广告业务侧的核心运营工具，供业务人员对 RTAID、RTA策略、RTA实验进行全生命周期管理。本文档作为开发需求说明，描述各页面的信息结构、字段定义、交互行为及业务约束，供前后端开发人员参考实现。</p>
+      <h3 class="sub-title">名词解释</h3>
+      <table class="doc-table">
+        <thead><tr><th>术语</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">RTAID</span></td><td>RTA 接入 ID，标识一个广告媒体渠道上的投放单元，是实验和策略的载体。</td></tr>
+          <tr><td><span class="field-name">RTA 实验</span></td><td>基于宙斯实验平台创建的 A/B 分桶实验，通过分桶对比不同策略的投放效果。</td></tr>
+          <tr><td><span class="field-name">RTA 策略</span></td><td>定义具体出价逻辑的规则集合，可绑定至实验的某些分桶。</td></tr>
+          <tr><td><span class="field-name">宙斯实验</span></td><td>阿里内部实验平台（1688ab.alibaba-inc.com），提供分桶流量管理能力。</td></tr>
+          <tr><td><span class="field-name">分桶</span></td><td>将流量等分为0～9号桶，实验组、对照组、空白组各占若干桶。</td></tr>
+          <tr><td><span class="field-name">扩桶</span></td><td>将胜出的实验策略推广到更多分桶，逐步替换原有对照组或其他实验组。</td></tr>
+          <tr><td><span class="field-name">BC用户</span></td><td>B用户为企业客户，C用户为个人消费者，策略可针对二者分别配置出价规则。</td></tr>
+          <tr><td><span class="field-name">pLTV</span></td><td>预测生命周期价值，是人群分层的核心特征标签之一。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 整体架构 ===== -->
+  <span class="section-anchor" id="arch"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">✦</span>整体架构</h2>
+    <div class="module-overview">
+      <div class="mo-card">
+        <div class="mo-title">① RTAID 管理</div>
+        <div class="mo-desc">管理广告媒体渠道接入单元，支持多渠道（Tanx/巨量引擎/腾讯/快手）、任务类型（拉新/拉活）配置，每个 RTAID 可关联一个 RTA 实验。</div>
+      </div>
+      <div class="mo-card">
+        <div class="mo-title">② RTA 实验管理</div>
+        <div class="mo-desc">以转置表格展示多个实验，每实验为一列。支持分桶管理、实验报告查看、扩桶申请、自动扩桶（分级机制）、版本历史等。</div>
+      </div>
+      <div class="mo-card">
+        <div class="mo-title">③ RTA 策略管理</div>
+        <div class="mo-desc">管理出价策略规则，支持系数/CPA/CPC/ROI等多种出价模式，可配置 B/C 用户分区规则与人群规则标签（pLTV、版位、B浓度等）。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="sub-title" style="margin-top:0">页面整体结构</h3>
+      <table class="doc-table">
+        <thead><tr><th>区域</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>顶部导航栏（固定）</td><td>高度 56px，含 Logo 区、模块 Tab（RTAID管理 / RTA实验管理 / RTA策略管理）、右侧主操作按钮（随 Tab 切换变化）。</td></tr>
+          <tr><td>搜索栏</td><td>每个模块顶部均有独立搜索栏，支持多字段组合筛选，包含"搜索"与"重置"按钮。</td></tr>
+          <tr><td>内容区</td><td>白色卡片包裹表格，RTAID管理和策略管理使用标准行列表格，实验管理使用转置表格（实验为列）。</td></tr>
+          <tr><td>分页</td><td>列表底部有分页控件，实验管理使用上一页/下一页翻页，其余模块显示页码。</td></tr>
+          <tr><td>弹窗（抽屉式）</td><td>大部分新增/编辑/详情弹窗从右侧滑入，宽度 580～960px 不等；部分确认类弹窗为居中弹出。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 1. RTAID 管理 ===== -->
+  <span class="section-anchor" id="rtaid"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">1</span>RTAID 管理</h2>
+    <p>管理广告媒体渠道接入 ID，是整个 RTA 体系的入口层。</p>
+
+    <!-- 1.1 列表页 -->
+    <span class="section-anchor" id="rtaid-list"></span>
+    <h3 class="sub-title">1.1 RTAID 列表页</h3>
+
+    <div class="card">
+      <h4 class="mini-title">搜索栏字段</h4>
+      <table class="doc-table">
+        <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>任务类型</td><td>下拉选择</td><td>全部类型 / 拉新 / 拉活</td></tr>
+          <tr><td>RTAID</td><td>文本输入</td><td>精确匹配 RTAID 数字编号</td></tr>
+          <tr><td>媒体渠道</td><td>下拉选择</td><td>全部渠道 / Tanx / 巨量引擎 / 腾讯 / 快手</td></tr>
+          <tr><td>RTAID 名称</td><td>文本输入</td><td>模糊匹配 RTAID 名称</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">列表列定义</h4>
+      <table class="doc-table">
+        <thead><tr><th>列名</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>ID</td><td>系统自增序号</td></tr>
+          <tr><td>任务类型</td><td>标签形式：拉新（绿色）/ 拉活（橙色）</td></tr>
+          <tr><td>业务分类</td><td>文本，如"拉新实验"、"拉活实验"</td></tr>
+          <tr><td>渠道</td><td>广告交易平台大类（Tanx / 巨量引擎 / 腾讯 / 快手）</td></tr>
+          <tr><td>媒体渠道</td><td>具体媒体标签，如 Tanx 下可能包含腾讯、头条、快手多个标签</td></tr>
+          <tr><td>RTAID</td><td>数字编号</td></tr>
+          <tr><td>RTAID 名称</td><td>文本</td></tr>
+          <tr><td>RTA 实验名称</td><td>关联的实验名称，可为空</td></tr>
+          <tr><td>创建时间</td><td>格式：YYYY-M-D HH:mm</td></tr>
+          <tr><td>修改时间</td><td>格式：YYYY-M-D HH:mm</td></tr>
+          <tr><td>创建人</td><td>用户英文名/工号</td></tr>
+          <tr><td>操作</td><td>编辑 | 下线</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">行操作</h4>
+      <div class="op-list">
+        <div class="op-item">
+          <span class="op-name">编辑</span>
+          <span class="op-desc">打开右侧抽屉式弹窗，预填当前行数据，可修改所有字段后确认保存。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name red">下线</span>
+          <span class="op-desc">弹出确认 Toast，询问是否下线该 RTAID，确认后执行下线操作。</span>
+        </div>
+      </div>
+
+      <h4 class="mini-title">顶部操作</h4>
+      <p>右上角固定"<strong>+ 新增RTAID</strong>"按钮，点击打开新增弹窗。</p>
+    </div>
+
+    <!-- 1.2 新增/编辑弹窗 -->
+    <span class="section-anchor" id="rtaid-modal"></span>
+    <h3 class="sub-title">1.2 新增 / 编辑 RTAID 弹窗</h3>
+
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗从右侧滑入，宽度 580px，标题为"新增RTAID"或"编辑RTAID"。底部包含取消和确认按钮。</div></div>
+
+      <h4 class="mini-title">表单字段</h4>
+      <table class="doc-table">
+        <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>交互说明</th></tr></thead>
+        <tbody>
+          <tr><td>任务类型</td><td>单选（拉新 / 拉活）</td><td class="req">必填</td><td>默认选中“拉新”</td></tr>
+          <tr><td>业务分类</td><td>下拉选择</td><td class="req">必填</td><td>选项：1688主客拉新 / 1688主客拉活 / 拉新AAC / 促购 / ROI优化</td></tr>
+          <tr><td>渠道</td><td>下拉选择</td><td class="req">必填</td><td>选项：Tanx / 巨量引擎 / 腾讯 / 快手。<strong>选择 Tanx 时</strong>，联动显示“媒体渠道”字段行。</td></tr>
+          <tr><td>媒体渠道</td><td>单选（Tanx专属）/ 只读自动填充（非Tanx）</td><td class="req">渠道有值时必填</td><td>渠道=Tanx 时显示单选组（腾讯/头条/快手/丰巢），为必填项。非Tanx 渠道时，媒体渠道自动赋値为渠道名称（如选了“腾讯”，媒体渠道自动填充“腾讯”），展示为只读模式。</td></tr>
+          <tr><td>RTAID</td><td>文本输入</td><td class="req">必填</td><td>数字编号，输入广告媒体平台分配的 ID</td></tr>
+          <tr><td>RTAID名称</td><td>文本输入</td><td class="req">必填</td><td>便于识别的可读名称</td></tr>
+          <tr><td>关联RTA实验</td><td>下拉选择</td><td class="opt">选填</td><td>从已创建的 RTA 实验中选择关联</td></tr>
+          <tr><td>备注</td><td>文本输入</td><td class="opt">选填</td><td>自由说明文字</td></tr>
+        </tbody>
+      </table>
+      
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>修改人字段已移除，系统自动记录每次修改的操作人信息。广告主账号字段已移除。</div></div>
+      
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 渠道字段联动规则</div>
+        <ul class="rule-list">
+          <li>渠道选择 <strong>Tanx</strong> 时，“媒体渠道”单选组显示，且为必填项，需选择 Tanx 下属的具体媒体（腾讯/头条/快手/丰巢）。</li>
+          <li>渠道选择 <strong>巨量引擎 / 腾讯 / 快手</strong> 等非Tanx渠道时，“媒体渠道”自动赋値为所选渠道名，展示为只读文本（不可手动修改）。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2. RTA 实验管理 ===== -->
+  <span class="section-anchor" id="exp"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">2</span>RTA 实验管理</h2>
+    <p>管理 RTA 分桶实验的全生命周期，包括新建、编辑、查看报告、扩桶、版本管理、下线等操作。</p>
+
+    <!-- 2.1 实验列表 -->
+    <span class="section-anchor" id="exp-list"></span>
+    <h3 class="sub-title">2.1 实验列表（转置表格）</h3>
+
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>实验管理采用<strong>转置表格</strong>布局：每个实验为一列，字段（媒体渠道、RTAID、实验分流等）为行。每页展示 3 个实验，支持翻页。</div></div>
+
+      <h4 class="mini-title">搜索栏字段</h4>
+      <table class="doc-table">
+        <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>RTAID</td><td>文本输入</td><td>按 RTAID 数字精确过滤</td></tr>
+          <tr><td>媒体渠道</td><td>下拉选择</td><td>全部渠道 / Tanx / 巨量引擎 / 腾讯 / 快手</td></tr>
+          <tr><td>RTA实验名称</td><td>文本输入</td><td>按实验名称关键词模糊过滤</td></tr>
+          <tr><td>RTA实验策略</td><td>文本输入</td><td>按策略名称关键词模糊过滤</td></tr>
+          <tr><td>实验状态</td><td>下拉选择</td><td>全部状态 / 实验中 / 已推全 / 已下线</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">表头（每列）</h4>
+      <p>每个实验列的表头包含以下信息：</p>
+      <table class="doc-table">
+        <thead><tr><th>元素</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>实验名称</td><td>加粗大字，后跟内联编号徽章（如 #1）</td></tr>
+          <tr><td>操作按鈕区</td><td>与实验名称同行，横排展示：编辑 | 报告 | 扩桶 | 推全 | 下线</td></tr>
+          <tr><td>媒体渠道 · RTAID</td><td>在名称行下方显示，格式如"广点通 · #10375"。与实验状态徽章同行，左侧渠道信息，右侧状态徽章。</td></tr>
+          <tr><td>实验状态徽章</td><td>三种状态：<span class="status running"><span class="s-dot"></span>实验中</span>（绿色呼吸灯）、<span class="status pushed">● 已推全</span>（蓝色）、<span class="status offline">✕ 已下线</span>（红色）。</td></tr>
+          <tr><td>列颜色主题</td><td>Tanx 列蓝色、巨量引擎列红色、腾讯/广点通列绿色，顶部有 4px 颜色条区分。</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">数据行字段</h4>
+      <table class="doc-table">
+        <thead><tr><th>行字段</th><th>展示内容</th></tr></thead>
+        <tbody>
+          <tr><td>媒体渠道</td><td>具体媒体名称（广点通 / 巨量引擎 / 快手等）</td></tr>
+          <tr><td>RTAID</td><td>代码字体展示的 RTAID 数字</td></tr>
+          <tr><td>实验分流</td><td>宙斯分流 / 天渠分流</td></tr>
+          <tr><td>负责人</td><td>紫色标签显示人员名称</td></tr>
+          <tr><td>实验周期</td><td>起止日期，进行中实验附"(进行中)"绿色提示</td></tr>
+          <tr><td>实验版本</td><td>橙色标签显示版本号（如 v3），可点击查看版本历史弹窗</td></tr>
+          <tr><td>实验组</td><td>列出各实验组策略名称（可点击查看详情）及对应分桶编号（蓝色圆角徽章）</td></tr>
+          <tr><td>对照组</td><td>对照组策略名称及分桶编号（绿色圆角徽章）</td></tr>
+          <tr><td>空白组</td><td>空白组策略名称及分桶编号（灰色圆角徽章）</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">分页机制</h4>
+      <p>底部有"上一页 ‹" 和"下一页 ›"按钮，中间显示"第 X / Y 页 · 共 N 个实验"。每页展示 3 个实验列。</p>
+
+      <h4 class="mini-title">表头操作按钮</h4>
+      <div class="op-list">
+        <div class="op-item">
+          <span class="op-name">编辑</span>
+          <span class="op-desc">打开右侧抽屉式编辑弹窗，预填当前实验配置。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name">报告</span>
+          <span class="op-desc">打开实验报告弹窗，展示实验数据、显著性检验和实验决策。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name">扩桶</span>
+          <span class="op-desc">打开扩桶申请弹窗，选择要推广的策略和目标分桶，提交多级审批。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name green">推全</span>
+          <span class="op-desc">打开推全弹窗（2 步引导流程），系统自动推荐胜出策略和分级扩桶计划。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name red">下线</span>
+          <span class="op-desc">弹出确认 Toast，下线该实验。实验状态更改为"已下线"。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.2 新建/编辑实验弹窗 -->
+    <span class="section-anchor" id="exp-modal"></span>
+    <h3 class="sub-title">2.2 新建 / 编辑 RTA 实验弹窗</h3>
+
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗宽度 780px，从右侧滑入。底部按钮包含：取消、提交审批（默认）、⚡一键创建实验（在特定条件下显示）。</div></div>
+
+      <h4 class="mini-title">基础配置字段</h4>
+      <table class="doc-table">
+        <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>交互说明</th></tr></thead>
+        <tbody>
+          <tr><td>宙斯实验唯一标识</td><td>下拉选择 + 外链按钮</td><td class="req">必填</td><td>从已创建的宙斯实验中选择（格式：ZS-2026-XXX · 实验名称）。右侧附"+ 新增宙斯实验 ↗"按钮，点击跳转至宙斯实验平台（<code>https://1688ab.alibaba-inc.com/v2/experiment</code>，新标签页打开）。</td></tr>
+          <tr><td>渠道</td><td>下拉选择</td><td class="req">必填</td><td>Tanx / 巨量引擎 / 腾讯 / 快手</td></tr>
+          <tr><td>RTAID</td><td>下拉选择</td><td class="req">必填</td><td>从当前渠道下已创建的 RTAID 中选择</td></tr>
+          <tr><td>RTA 实验名称</td><td>文本输入</td><td class="req">必填</td><td>实验的可读名称</td></tr>
+          <tr><td>RTA 实验描述</td><td>文本输入</td><td class="opt">选填</td><td>实验的业务说明</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">策略分组配置</h4>
+      <p>实验弹窗包含三个策略分组区，每组支持动态增删策略行。每条策略行包含：</p>
+      <table class="doc-table">
+        <thead><tr><th>组名</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>RTA 实验策略</td><td>实验组策略配置，可添加多条策略。每行选择策略名称 + 多选分配分桶（0～9号桶，已被其他策略占用的桶显示灰色不可选）。</td></tr>
+          <tr><td>RTA 对照策略</td><td>对照组策略配置，同上。</td></tr>
+          <tr><td>RTA 空白策略</td><td>空白组（不干预流量）策略配置，同上。</td></tr>
+        </tbody>
+      </table>
+
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 分桶互斥规则</div>
+        <ul class="rule-list">
+          <li>同一实验内，每个分桶（0～9 号共 10 个）只能被<strong>一个策略</strong>选用，跨实验组、对照组、空白组均不得重叠。</li>
+          <li>已被某策略占用的分桶，在其他任意策略的分桶多选下拉中自动显示为<strong>灰色不可选</strong>，并附"已占用"红色文字提示；取消占用后立即解锁恢复可选状态。</li>
+          <li>分桶互斥为<strong>实时联动同步</strong>：同一弹窗内任意策略行勾选或取消分桶，立即刷新所有其余策略行的可选状态，无需手动触发。</li>
+          <li>策略选择下拉中，列出已在该 RTAID 下创建的所有 RTA 策略（含新建/人群圈选中/已上线/已下线各状态均可绑定）。</li>
+        </ul>
+      </div>
+
+      <div class="rule-box" style="border-color:#b7eb8f;background:#f6ffed">
+        <div class="rule-title" style="color:#237804">✅ 表单必填与校验规则</div>
+        <ul class="rule-list">
+          <li><strong>宙斯实验唯一标识、渠道、RTAID、RTA 实验名称</strong>为必填项，任一为空时底部提交按钮置灰，悬停提示具体缺漏字段。</li>
+          <li>同一 RTAID 下不得创建<strong>同名</strong> RTA 实验，保存时后端返回唯一性冲突提示，前端展示字段级红色错误信息。</li>
+          <li>三类分组（实验组 / 对照组 / 空白组）至少各需配置<strong>一条策略行</strong>，每条策略行均需选定具体 RTA 策略和至少一个分桶，否则提交前端拦截并高亮缺漏行。</li>
+          <li>10 个分桶<strong>全部分配完毕后</strong>，仍可继续添加策略行（行留空），保存时若存在未分配分桶的策略行则弹出警告提示是否继续。</li>
+        </ul>
+      </div>
+
+      <div class="rule-box" style="border-color:#d3adf7;background:#f9f0ff">
+        <div class="rule-title" style="color:#531dab">🔄 新建 vs 编辑模式差异</div>
+        <ul class="rule-list">
+          <li><strong>新建模式</strong>：所有字段空白初始化，底部仅显示"取消"和"提交审批"两个按钮。</li>
+          <li><strong>编辑模式</strong>：预填当前实验完整配置，底部额外显示橙色 <strong>⚡ 一键创建实验</strong> 按钮，点击后跳过审批直接同步宙斯平台创建版本；loading 约 1 秒，完成后 Toast 提示宙斯实验版本号，弹窗自动关闭。</li>
+          <li>宙斯实验唯一标识在<strong>编辑模式下不可修改</strong>（只读文本展示），避免关联关系错乱；如需更换宙斯实验须重新新建。</li>
+          <li>已下线实验支持编辑并保存，保存后状态仍为已下线，需手动执行重新上线操作。</li>
+        </ul>
+      </div>
+
+      <h4 class="mini-title">底部操作</h4>
+      <div class="op-list">
+        <div class="op-item">
+          <span class="op-name">提交审批</span>
+          <span class="op-desc">提交实验配置，进入多级审批流程。必填项未填或分组分桶配置不完整时，按钮置灰并展示具体缺漏提示。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name green">⚡一键创建实验</span>
+          <span class="op-desc">仅<strong>编辑模式</strong>下显示（新建模式不展示）。点击后跳过审批直接在宙斯平台创建实验版本，适用于快速验证场景。按钮点击后 loading ~1s，完成后 Toast 提示宙斯版本号，弹窗自动关闭。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.3 实验报告弹窗 -->
+    <span class="section-anchor" id="exp-report"></span>
+    <h3 class="sub-title">2.3 实验报告弹窗</h3>
+
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗宽度 960px，分为实验结论、实验决策、实验数据、统计显著性摘要四个区块。</div></div>
+
+      <h4 class="mini-title">内容结构</h4>
+      <table class="doc-table">
+        <thead><tr><th>区块</th><th>内容说明</th></tr></thead>
+        <tbody>
+          <tr><td>实验时间</td><td>报告对应的实验起止日期</td></tr>
+          <tr><td>实验结论</td><td>文字描述实验结论，包含胜出策略、关键指标对比说明和建议决策。背景色为浅灰卡片。</td></tr>
+          <tr><td>实验决策</td><td>三个按钮：<strong>扩桶</strong>（蓝色）/ <strong>继续观察</strong>（蓝色）/ <strong>下线实验</strong>（红色）。</td></tr>
+          <tr><td>实验数据表格</td><td>行为各实验组（实验组1、实验组2…对照组），列为指标：流量占比、花费、会员数、B会员数、B用户浓度、CAC、LTV_0、人均LTV_0、ROI_0、买家转化率。最后一列"分桶数据"固定在右侧可点击查看分桶详情。</td></tr>
+          <tr><td>统计显著性摘要</td><td>分组展示各核心指标的显著性检验结果，包含：指标名称、实验组与对照组数值、delta（正/负高亮）、p 值、显著性结论（显著/边缘/不显著）。</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">ROI₀ 护栏机制</h4>
+      <p>实验数据中 ROI_0 行有护栏高亮，配合 ROI₀ 双条件卡片：</p>
+      <table class="doc-table">
+        <thead><tr><th>条件</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>条件一：ROI_0 绝对值</td><td>实验组 ROI_0 需 ≥ 阈值（如 0.32），卡片显示通过/未通过状态。</td></tr>
+          <tr><td>条件二：ROI_0 相对对照组</td><td>实验组相对对照组的 ROI_0 Delta 需 ≥ 设定值，同样显示通过/未通过。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 2.4 扩桶申请弹窗 -->
+    <span class="section-anchor" id="exp-promote"></span>
+    <h3 class="sub-title">2.4 扩桶申请弹窗</h3>
+
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗宽度 700px，标题为"扩桶申请"，含实验名称副标题。</div></div>
+
+      <h4 class="mini-title">内容结构</h4>
+
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="step-num">1</span>
+          <div class="step-content"><strong>前置条件检查区</strong>：显示系统自动检查的多项条件（通过/不通过），底部汇总"条件全部通过，可提交申请"或"存在不满足条件，需处理后再申请"。每条检查项有对应状态标签。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">2</span>
+          <div class="step-content"><strong>选择策略</strong>：下拉选择要扩桶的实验策略。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">3</span>
+          <div class="step-content"><strong>选择分桶</strong>：网格形式展示 0～9 号桶，支持"全部分桶"全选 checkbox，也可逐个选择。选中的桶高亮显示。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">4</span>
+          <div class="step-content"><strong>操作说明</strong>：提示文字说明扩桶逻辑（选中策略和分桶，提交审批后经多层审批通过后正式扩桶；实验扩桶后状态默认置为下线状态）。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">5</span>
+          <div class="step-content"><strong>审批流程</strong>：可视化展示审批节点：业务发起人 → 数科审批（彦孜）→ 业务负责人（宸刚）→ 最终审批（会成），各节点有完成/进行中/待处理三种状态。</div>
+        </div>
+      </div>
+
+      <h4 class="mini-title">底部按钮</h4>
+      <div class="op-list">
+        <div class="op-item">
+          <span class="op-name green">提交扩桶申请</span>
+          <span class="op-desc">前置条件未全部通过时按钮置灰不可点；全部通过后变为绿色可点击。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name red">取消</span>
+          <span class="op-desc">关闭弹窗，不提交。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.5 自动扩桶弹窗 -->
+    <span class="section-anchor" id="exp-auto"></span>
+    <h3 class="sub-title">2.5 推全弹窗（分级扩桶机制）</h3>
+
+    <div class="card">
+      <div class="tip tip-success"><span class="tip-icon">⚡</span><div>弹窗宽度 760px，分 2 步引导流程。内部功能与“推全”命令一致，弹窗标题显示为“推全”。系统基于算法分析自动推荐胜出策略，并制定分级扩桶计划。</div></div>
+
+      <h4 class="mini-title">Step 1 — 算法分析 & 策略推荐</h4>
+      <table class="doc-table">
+        <thead><tr><th>区块</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>算法推荐横幅</td><td>绿色/橙色/蓝色 banner，展示推荐策略名称、置信度、关键结论。</td></tr>
+          <tr><td>前置检查清单</td><td>多项系统检查（实验运行时长、样本量、护栏指标等），每项显示通过/失败状态及说明文字。</td></tr>
+          <tr><td>推荐结论卡片</td><td>渐变蓝绿背景卡片，展示：推荐策略、置信度、实验收益、检测周期等关键数据。</td></tr>
+          <tr><td>LTV 对比表</td><td>各策略的 LTV 数据对比，胜出行高亮绿色底色，附"最优"徽章。</td></tr>
+          <tr><td>关注指标表</td><td>完整指标矩阵（花费/会员数/B浓度/CAC/LTV_0/ROI_0/买家转化率），包含护栏指标行（橙色高亮）。</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">Step 2 — 分级扩桶计划</h4>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>系统依据实验结果制定多阶段扩桶计划，按步骤逐桶将胜出策略扩展至全量。</div></div>
+      <table class="doc-table">
+        <thead><tr><th>子区块</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>分桶地图</td><td>
+            可视化展示 0～9 号桶当前状态：<br>
+            <div class="bucket-vis" style="margin-top:8px">
+              <span class="bk bk-blank">0 空白组</span>
+              <span class="bk bk-exp">1~3 实验组</span>
+              <span class="bk bk-win">4~5 ★胜出</span>
+              <span class="bk bk-ctrl">8~9 对照组</span>
+              <span class="bk bk-next">1~3 本次目标</span>
+            </div>
+            颜色说明：灰色=空白组，蓝色=实验组，绿色=胜出策略，橙色=对照组，蓝色虚线=本次扩桶目标桶。
+          </td></tr>
+          <tr><td>分级扩桶计划列表</td><td>展示 N 个步骤的扩桶阶段计划。每个阶段行包含：阶段图标（✅已完成 / 🔵进行中 / ⬜待执行）、步骤号、分桶范围、目标策略、状态标签（已完成/进行中/待执行）、所需天数或已运行天数、备注说明。</td></tr>
+          <tr><td>本次操作摘要</td><td>表格形式列出本次扩桶的变化：分桶号 → 原策略 → 替换后策略 → 备注。</td></tr>
+          <tr><td>确认区</td><td>黄色提示框，需勾选"已确认以上内容，同意执行扩桶操作"后，"确认执行"按钮激活。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 2.6 版本历史弹窗 -->
+    <span class="section-anchor" id="exp-version"></span>
+    <h3 class="sub-title">2.6 实验版本历史弹窗</h3>
+
+    <div class="card">
+      <p>点击实验列"实验版本"行的版本标签（如 v3▼）打开。弹窗宽度 620px。</p>
+      <h4 class="mini-title">内容结构</h4>
+      <p>每个版本为一个卡片条目，当前版本卡片有蓝色边框高亮。每个版本卡片包含：</p>
+      <ul style="margin-left:20px;color:#444;font-size:13.5px;line-height:2">
+        <li>版本号徽章（历史版本灰色，当前版本橙色）+ 创建日期 + "当前版本"绿色标签</li>
+        <li>实验分流方式</li>
+        <li>实验策略快照（实验组/对照组/空白组的策略和分桶信息）</li>
+        <li>"查看详情"链接，点击打开该版本的操作记录居中弹窗</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 3. RTA 策略管理 ===== -->
+  <span class="section-anchor" id="strategy"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">3</span>RTA 策略管理</h2>
+    <p>管理具体的 RTA 出价策略，策略是实验运行的核心配置单元。</p>
+
+    <!-- 3.1 策略列表 -->
+    <span class="section-anchor" id="strategy-list"></span>
+    <h3 class="sub-title">3.1 策略列表页</h3>
+
+    <div class="card">
+      <h4 class="mini-title">搜索栏字段</h4>
+      <table class="doc-table">
+        <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>RTAID</td><td>文本输入</td><td>按 RTAID 编号精确过滤</td></tr>
+          <tr><td>媒体渠道</td><td>下拉选择</td><td>全部渠道 / Tanx / 巨量引擎 / 腾讯 / 快手</td></tr>
+          <tr><td>RTA 策略名称</td><td>文本输入</td><td>模糊匹配策略名称</td></tr>
+          <tr><td>策略人群标签</td><td>文本输入</td><td>按人群标签关键词过滤（如 pLTV、B浓度等）</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">列表列定义</h4>
+      <table class="doc-table">
+        <thead><tr><th>列名</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>策略ID</td><td>系统自增序号</td></tr>
+          <tr><td>渠道</td><td>策略适用的广告渠道（Tanx / 巨量引擎 / 腾讯 / 快手）</td></tr>
+          <tr><td>RTAID</td><td>绑定的 RTAID 编号</td></tr>
+          <tr><td>RTA 策略名称</td><td>策略可读名称，可点击（蓝色下划线）直接打开策略配置详情弹窗</td></tr>
+          <tr><td>策略版本</td><td>版本标签（如 v3 ▾），点击可查看完整版本日志时间线弹窗</td></tr>
+          <tr><td>策略状态</td><td>状态彼章展示（详见下方状态定义）</td></tr>
+          <tr><td>出价模式</td><td>CPA出价 / 系数出价 / 混合出价 / CPC出价 / ROI出价</td></tr>
+          <tr><td>策略绑定实验</td><td>关联的实验名称（可点击平转跳转至实验管理页并自动打开实验详情）；未绑定时显示“—”（灰色）；支持一个策略被多个实验绑定，高于2个时显示凝缩 badge</td></tr>
+          <tr><td>策略绑定分桶</td><td>桶形图标彼章列表：实验组蓝色、对照组绿色、空白组灰色</td></tr>
+          <tr><td>策略人群标签</td><td>文本描述，如“pLTV，版位，B浓度”</td></tr>
+          <tr><td>操作</td><td>编辑 | 复制 | 上线 | 日志 | 下线（含置灰规则，详见下方）</td></tr>
+        </tbody>
+      </table>
+      
+      <div class="card" style="background:#f0f5ff;border-color:#91caff;margin-bottom:12px">
+        <h4 class="mini-title" style="color:#0050b3">📄 策略状态定义</h4>
+        <table class="doc-table">
+          <thead><tr><th>状态</th><th>彼章颜色</th><th>含义</th><th>上线弹窗可用？</th></tr></thead>
+          <tbody>
+            <tr><td>新建</td><td>灰色边框</td><td>策略已配置，尚未启动人群圈选，也未手动上线</td><td>✖ 上线按鈕置灰</td></tr>
+            <tr><td>人群圈选中</td><td>蓝色+闪烁圆点</td><td>RTA 策略正在通过标签进行人群圈选计算，尚未 just ready</td><td>✖ 上线按鈕置灰</td></tr>
+            <tr><td>已上线</td><td>绿色边框</td><td>人群圈选完成，已手动推送上线，可正常挂载RTA实验</td><td>✓ 可正常下线</td></tr>
+            <tr><td>已下线</td><td>浅灰边框</td><td>策略已手动下线，不再生效</td><td>✓ 可重新上线</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4 class="mini-title">行操作</h4>
+      <div class="op-list">
+        <div class="op-item">
+          <span class="op-name">编辑</span>
+          <span class="op-desc">打开策略编辑弹窗，可修改所有策略配置。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name" style="color:#fa8c16">复制</span>
+          <span class="op-desc">打开"复制 RTA策略"弹窗，默认预填原策略的所有配置，策略名称自动填充为"副本－《原策略名》"，弹窗内显示橙色提示 banner。用户修改后可保存为新策略。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name green">上线</span>
+          <span class="op-desc">打开上线校验弹窗，展示人群包圈选、策略规则配置、RTAID绑定等多项校验结果后手动确认上线。<br><strong>置灰条件</strong>：策略处于"新建"或"人群圈选中"状态时，上线按钮置灰且不可点击，鼠标悬停显示 tooltip 说明原因。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name" style="color:#722ed1">日志</span>
+          <span class="op-desc">打开策略版本日志弹窗，展示该策略从 v1 到 vN 的完整版本历史时间线。非当前版本可点击"查看配置"或"⏪ 回退至此版本"。</span>
+        </div>
+        <div class="op-item">
+          <span class="op-name red">下线</span>
+          <span class="op-desc">
+            <strong>置灰条件</strong>：策略已绑定未下线的 RTA 实验时，下线按钮置灰，鼠标悬停显示 tooltip："策略已挂载实验，请先解绑 RTA 实验再执行下线"。<br>
+            未绑定实验时弹出确认 Toast，确认后执行下线。
+          </span>
+        </div>
+      </div>
+
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 操作按钮置灰规则总表</div>
+        <ul class="rule-list">
+          <li><strong>上线置灰</strong>：策略状态为"新建"或"人群圈选中"时，上线按钮自动置灰且不可点击，tooltip 说明原因。</li>
+          <li><strong>下线置灰</strong>：策略当前有绑定的未下线 RTA 实验时，下线按钮自动置灰，必须先解绑所有实验再操作。</li>
+        </ul>
+      </div>
+      <h4 class="mini-title">顶部操作</h4>
+      <p>切换至策略管理 Tab 时，右上角操作按钮变更为"<strong>+ 新增RTA策略</strong>"。</p>
+    </div>
+
+    <!-- 3.2 新建/编辑策略弹窗 -->
+    <span class="section-anchor" id="strategy-modal"></span>
+    <h3 class="sub-title">3.2 新建 / 编辑 RTA 策略弹窗</h3>
+
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗宽度 960px，从右侧滑入。底部包含取消和完成按钮。</div></div>
+
+      <h4 class="mini-title">基础配置字段</h4>
+      <table class="doc-table">
+        <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>渠道</td><td>下拉选择</td><td class="req">必填</td><td>Tanx / 巨量引擎 / 腾讯 / 快手</td></tr>
+          <tr><td>RTAID</td><td>下拉选择</td><td class="req">必填</td><td>选择渠道下的 RTAID</td></tr>
+          <tr><td>RTA 策略名称</td><td>文本输入</td><td class="req">必填</td><td>策略可读名称</td></tr>
+          <tr><td>RTA 出价模式</td><td>单选</td><td class="req">必填</td><td>系数出价 / CPA出价（影响后续规则字段的展示形式）</td></tr>
+          <tr><td>BC区分出价</td><td>单选（是/否）</td><td class="req">必填</td><td>选"是"时显示 B/C 用户分 Tab 配置区；选"否"时显示统一用户策略配置区。</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">人群规则配置区（BC 区分模式）</h4>
+      <p>顶部有"B用户策略"和"C用户策略"两个 Tab，分别独立配置规则。每个 Tab 内：</p>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="step-num">1</span>
+          <div class="step-content">可添加多个<strong>人群规则块</strong>（crowd-rule），每个规则块代表一个出价规则组。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">2</span>
+          <div class="step-content">每个规则块头部包含：规则名称（如"规则层 1"）、内联出价输入框（人民币）、复制规则按钮、删除规则按钮。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">3</span>
+          <div class="step-content">规则块内部为<strong>人群条件列表</strong>，每条条件包含：人群标签选择（pLTV分位/B浓度/版位等）、运算符（包含/不包含/大于/小于等）、值输入、删除按钮。多条条件间支持"且"/"或"逻辑切换（可点击连接符 badge 切换 AND/OR）。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">4</span>
+          <div class="step-content">每个规则块底部有"+ 添加条件"按钮；整个配置区底部有"+ 添加规则"按钮。</div>
+        </div>
+      </div>
+
+      <h4 class="mini-title">人群规则配置区（统一模式）</h4>
+      <p>当 BC 区分 = 否时，显示单一"统一用户策略"区，结构与 B/C 分 Tab 相同，仅取消了 Tab 切换。</p>
+
+      <h4 class="mini-title">支持的人群标签</h4>
+      <table class="doc-table">
+        <thead><tr><th>标签</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>pLTV 分位</td><td>用户预测生命周期价值的分位段，如 pLTV&gt;80 等</td></tr>
+          <tr><td>B浓度</td><td>用户的 B 企业客户浓度指标</td></tr>
+          <tr><td>版位</td><td>广告版位类型（全部版位/站内版位/联盟版位）</td></tr>
+          <tr><td>活跃度</td><td>用户近期活跃状态</td></tr>
+          <tr><td>ROI阈值</td><td>针对 ROI 优化策略的目标回报率</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">各标签字段配置规则</h4>
+      <p>选择人群标签后，运算符和值输入框依据标签类型自动联动渲染，规则如下：</p>
+      <table class="doc-table">
+        <thead><tr><th>标签名称</th><th>运算符</th><th>值类型</th><th>可选值 / 说明</th></tr></thead>
+        <tbody>
+          <tr><td>pLTV序准</td><td>固定：属于区间</td><td>下拉选择</td><td>0~5%、5~10%、10~20%、20~30%、30~40%、40~50%、50~60%、60~70%、70~80%、80~90%、90~100%</td></tr>
+          <tr><td>pLTV序准値</td><td>≥ / ≤ / =（可选）</td><td>数值输入</td><td>百分位数值，如：60，单位 %</td></tr>
+          <tr><td>B浓度概率</td><td>≥ / ≤ / &gt; / &lt; / =（可选）</td><td>数值输入</td><td>浓度值，如：70，单位 %</td></tr>
+          <tr><td>pLTV序准×B浓度概率</td><td>≥ / ≤ / =（可选）</td><td>数值输入</td><td>复合特征值，如：0.5（无单位）</td></tr>
+          <tr><td>pLTV×pCVR</td><td>≥ / ≤ / =（可选）</td><td>数值输入</td><td>复合预测值，如：1.5（无单位）</td></tr>
+          <tr><td>版位</td><td>固定：=</td><td>下拉选择</td><td>全部 / 站内 / 联盟</td></tr>
+          <tr><td>系统</td><td>固定：=</td><td>下拉选择</td><td>不限 / iOS / Android</td></tr>
+        </tbody>
+      </table>
+      <p style="color:#888;font-size:12.5px">注：运算符为"固定"时页面展示为只读文本，无下拉框；运算符"可选"时展示下拉选择控件。</p>
+
+      <h4 class="mini-title">条件连接符规则</h4>
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 且 / 或 连接符交互规则</div>
+        <ul class="rule-list">
+          <li>同一人群规则块内，两条相邻条件之间有连接符 badge（默认"<strong>且</strong>"），点击可切换为"<strong>或</strong>"；再次点击恢复"且"。</li>
+          <li>连接符<strong>逐对独立控制</strong>：第 1-2 条之间可以是"且"，第 2-3 条之间可以是"或"，互不影响。</li>
+          <li>同一规则块内第一条条件前无连接符，删除某条非首条件时，其前方连接符一并删除；删除首条时，其后方连接符一并删除。</li>
+          <li>连接符的语义在实际人群圈选计算中生效：且（AND）取交集，或（OR）取并集。</li>
+        </ul>
+      </div>
+
+      <div class="rule-box" style="border-color:#b7eb8f;background:#f6ffed">
+        <div class="rule-title" style="color:#237804">✅ 策略表单校验规则</div>
+        <ul class="rule-list">
+          <li><strong>渠道、RTAID、策略名称、出价模式、BC区分出价</strong>为必填项，任一为空时"完成"按钮置灰。</li>
+          <li>同一 RTAID 下策略名称须<strong>唯一</strong>，保存时后端校验，重名时前端展示字段错误提示。</li>
+          <li>每个人群规则块必须包含<strong>至少一个有效条件</strong>（标签、运算符、值均已选定），空条件行不允许保存。</li>
+          <li>出价系数输入框为<strong>必填数值</strong>，系数出价模式下需大于 0，CPA/CPC/ROI 模式下须符合对应业务阈值要求。</li>
+          <li>BC 区分模式下，B 用户策略和 C 用户策略均须至少配置一条规则；统一模式下统一策略须至少一条规则。</li>
+          <li>规则块数量无上限，但同一规则块内条件数量建议不超过 10 条（超出时前端给出建议提示，不强制拦截）。</li>
+        </ul>
+      </div>
+
+      <div class="rule-box" style="border-color:#d3adf7;background:#f9f0ff">
+        <div class="rule-title" style="color:#531dab">🔄 新建 / 编辑 / 复制模式差异</div>
+        <ul class="rule-list">
+          <li><strong>新建模式</strong>：弹窗标题"新建 RTA策略"，所有字段空白，顶部无提示 banner。</li>
+          <li><strong>编辑模式</strong>：弹窗标题"编辑 RTA策略"，预填当前策略所有配置，顶部无提示 banner。保存后自动生成新版本号，原版本归入日志历史。</li>
+          <li><strong>复制模式</strong>：弹窗标题"复制 RTA策略"，顶部显示橙色提示 banner，注明源策略名称；策略名称自动预填为"副本－{源策略名}"，所有配置内容与源策略相同，可在此基础上修改后保存为新策略（不影响源策略）。</li>
+          <li>复制模式保存后，新策略的版本从 v1 重新计数，不继承源策略版本历史。</li>
+          <li>编辑模式下修改策略配置并保存，系统自动创建新版本（vN+1），变更类型根据修改内容自动判定（出价修改 / 分层调整）。</li>
+        </ul>
+      </div>
+
+      <h4 class="mini-title">人群规则块操作说明</h4>
+      <table class="doc-table">
+        <thead><tr><th>操作</th><th>行为说明</th></tr></thead>
+        <tbody>
+          <tr><td>+ 添加规则</td><td>在当前 Tab（B/C/统一）底部追加一个新的空规则块，规则名称自动递增（如"人群规则 2"）。</td></tr>
+          <tr><td>+ 添加条件</td><td>在当前规则块底部追加一行空条件行，默认带"且"连接符。</td></tr>
+          <tr><td>复制规则</td><td>将当前规则块（含出价系数、所有条件及连接符逻辑）完整复制为新规则块，追加在当前块下方，名称自动递增。</td></tr>
+          <tr><td>删除规则（×）</td><td>删除整个规则块；若仅剩一个规则块时，规则块内的删除按钮不置灰（允许删除，但保存时会触发"至少一条规则"校验）。</td></tr>
+          <tr><td>删除条件（×）</td><td>删除单条条件行，同时自动清理该行前方或后方的连接符。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3.3 策略详情弹窗 -->
+    <span class="section-anchor" id="strategy-detail"></span>
+    <h3 class="sub-title">3.3 策略配置详情弹窗</h3>
+
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗宽度 700px，从右侧滑入。点击策略名称列（蓝色下划线）或历史版本日志中的“查看配置”都可打开此弹窗。</div></div>
+
+      <h4 class="mini-title">弹窗头部</h4>
+      <p>展示策略名称（大字加粗）及以下 4 个信息卡片：</p>
+      <table class="doc-table">
+        <thead><tr><th>信息项</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>出价模式</td><td>系数出价 / CPA出价 等</td></tr>
+          <tr><td>BC区分出价</td><td>是 / 否</td></tr>
+          <tr><td>策略人群标签</td><td>文本列举，如"pLTV，版位，B浓度"</td></tr>
+          <tr><td>创建时间</td><td>YYYY-MM-DD HH:mm</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">溢价出价规则对照表</h4>
+      <p>深色表头（深蓝 #2d3a4a）双层表头，区分 B 用户和 C 用户：</p>
+      <table class="doc-table">
+        <thead><tr><th>维度</th><th>列</th></tr></thead>
+        <tbody>
+          <tr><td>行（横向）</td><td>pLTV 分位区间（如 0~20、20~40、40~60、60~80、80~100）</td></tr>
+          <tr><td>B用户列</td><td>全部版位 / 站内版位 / 联盟版位（三列，与C用户之间有加粗分隔线）</td></tr>
+          <tr><td>C用户列</td><td>全部版位 / 站内版位 / 联盟版位（三列）</td></tr>
+          <tr><td>值颜色分级</td><td>高溢价红色 → 橙色 → 黄色 → 青色 → 蓝色，无值显示灰色"—"</td></tr>
+        </tbody>
+      </table>
+      <p>表格注释：全部版位有値时，站内/联盟版位不填；全部版位无値时，站内和联盟版位均需填写。</p>
+    </div>
+  </div>
+  
+  <!-- ===== 3.4 策略版本日志弹窗 ===== -->
+  <span class="section-anchor" id="strategy-version"></span>
+  <div class="section">
+    <h3 class="sub-title">3.4 策略版本日志弹窗</h3>
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗宽度 620px，从右侧滑入。点击策略列表“策略版本”列的版本标签（如 v3 ▾）或操作列“日志”按鈕可打开。</div></div>
+      <h4 class="mini-title">内容结构</h4>
+      <p>每个版本为一个时间线节点，当前版本圆圈蓝色高亮。每个节点包含：</p>
+      <table class="doc-table">
+        <thead><tr><th>元素</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>版本号圆圈</td><td>v1~vN，当前版本为蓝色实心，历史版本为灰色空心</td></tr>
+          <tr><td>版本标签 + 变更类型 badge</td><td>变更类型如：初始创建、出价修改、分层调整，当前版本另附“当前版本”青色标签</td></tr>
+          <tr><td>生效时间区间</td><td>格式：生效：YYYY-MM-DD ~ YYYY-MM-DD（当前版本显示“至今”）</td></tr>
+          <tr><td>操作人</td><td>展示该版本的操作人名称</td></tr>
+          <tr><td>变更说明</td><td>策略本次变更的具体描述文字（浅灰底色卡片，左侧有变更类型色条）</td></tr>
+          <tr><td>查看配置（历史版本専有）</td><td>点击后打开该版本的策略配置详情弹窗（展示历史快照）</td></tr>
+          <tr><td>回退至此版本（历史版本専有）</td><td>点击后弹出回退确认弹窗，展示当前版本 vs 目标版本对比＋不可撤销警告，确认后执行版本回退。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- ===== 3.5 策略上线校验弹窗 ===== -->
+  <span class="section-anchor" id="strategy-online"></span>
+  <div class="section">
+    <h3 class="sub-title">3.5 上线校验弹窗</h3>
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>弹窗为居中弹窗，宽度 520px。点击操作列“上线”按鈕打开（仅当策略处于已上线或已下线状态时可点，新建/人群圈选中时按鈕置灰）。</div></div>
+      <h4 class="mini-title">弹窗内容结构</h4>
+      <div class="flow-steps">
+        <div class="flow-step"><span class="step-num">1</span><div class="step-content"><strong>蓝色说明横幅</strong>：提示“上线后将正式用于 RTA 实验投放，上线前系统已自动校验以下项”</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">2</span><div class="step-content"><strong>校验项列表</strong>：5 项自动校验，每项包含绿色通过图标 ✓（或红色 !）、校验项名称、详细说明。校验项包含：人群包圈选已完成、策略规则配置完整、绑定RTAID已确认、策略版本检查、实验绑定校验。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">3</span><div class="step-content"><strong>黄色警告横幅</strong>：提示“上线后策略将对绑定实验组生效，如需修改请先下线再编辑”。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">4</span><div class="step-content"><strong>确认上线按鈕</strong>：点击后弹窗关闭，策略状态更新为“已上线”并弹出成功提示 Toast。</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 4. 人群圈选机制 ===== -->
+  <span class="section-anchor" id="crowd-selection"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">4</span>人群圈选机制</h2>
+    <p>RTA 策略的核心能力之一是<strong>基于用户标签实现精准人群定向出价</strong>。人群圈选由天梯（Tianti）特征平台驱动，将抽象的标签条件转化为可在实时竞价链路中使用的 deviceid 命中集合。本章说明标签体系、圈选计算全流程、deviceid 映射机制及 RTA 请求命中判断逻辑。</p>
+
+    <!-- 4.1 标签体系 -->
+    <span class="section-anchor" id="crowd-tag-system"></span>
+    <h3 class="sub-title">4.1 天梯平台标签体系</h3>
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>天梯平台（Tianti）是 1688 广告侧的用户特征工程平台，周期性（T+1）为全量用户计算各维度特征值，并以标签形式对外提供查询能力。RTA 策略编辑界面中配置的所有人群标签条件，均基于天梯平台的输出。</div></div>
+
+      <h4 class="mini-title">核心标签维度</h4>
+      <table class="doc-table">
+        <thead><tr><th>标签维度</th><th>字段标识</th><th>类型</th><th>说明</th><th>典型取值示例</th></tr></thead>
+        <tbody>
+          <tr><td>pLTV 分位（序准）</td><td>pLTV序准</td><td>枚举区间</td><td>用户预测生命周期价值的百分位分位段；分位越高，用户价值越高</td><td>0~5%、20~40%、80~100%</td></tr>
+          <tr><td>pLTV 数值</td><td>pLTV序准値</td><td>数值</td><td>pLTV 的具体百分位数值，支持 ≥/≤/= 运算，精度更高</td><td>≥ 60（即 pLTV≥60 分位）</td></tr>
+          <tr><td>B 用户浓度</td><td>B浓度概率</td><td>数值（%）</td><td>该设备/账号关联的企业客户（B端）浓度概率，反映 B 端转化可能性</td><td>≥ 70%</td></tr>
+          <tr><td>版位偏好</td><td>版位</td><td>枚举</td><td>用户的广告曝光来源版位类型，用于渠道定向</td><td>全部 / 站内 / 联盟</td></tr>
+          <tr><td>操作系统</td><td>系统</td><td>枚举</td><td>用户设备操作系统，iOS/Android 用户出价偏好不同</td><td>不限 / iOS / Android</td></tr>
+          <tr><td>pLTV×pCVR 复合</td><td>pLTV×pCVR</td><td>数值</td><td>pLTV 与转化率预测值的复合打分，综合反映用户商业价值和转化潜力</td><td>≥ 1.5</td></tr>
+          <tr><td>pLTV序准×B浓度复合</td><td>pLTV序准×B浓度概率</td><td>数值</td><td>pLTV 分位与 B 浓度概率的联乘得分，用于高 B 浓度高价值用户定向</td><td>≥ 0.5</td></tr>
+        </tbody>
+      </table>
+
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 标签更新周期说明</div>
+        <ul class="rule-list">
+          <li>天梯平台对全量用户进行 <strong>T+1 批量计算</strong>，每日凌晨更新，实时竞价时使用前一日的特征快照。</li>
+          <li>新上线策略在人群圈选计算完成（通常需要 1 个自然日）前，人群包为空，策略处于"人群圈选中"状态，不可上线。</li>
+          <li>标签值的变化（如用户 pLTV 提升）会在下个 T+1 周期后自动反映，无需手动刷新策略。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4.2 圈选全流程 -->
+    <span class="section-anchor" id="crowd-flow"></span>
+    <h3 class="sub-title">4.2 人群圈选全流程</h3>
+    <div class="card">
+      <div class="tip tip-success"><span class="tip-icon">✅</span><div>人群圈选的本质是：将 RTA 策略中配置的<strong>多维标签布尔条件</strong>，翻译为一批满足条件的 <strong>userid 集合</strong>（即人群包），供 RTA 实时请求时查询命中。</div></div>
+
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>策略标签条件配置</strong><br>
+            业务人员在 RTA 策略编辑弹窗中，为 B/C 用户分别（或统一）配置一个或多个<strong>人群规则块</strong>，每个规则块包含若干标签条件（AND/OR 组合）。<br>
+            示例：<code style="background:#f0f3f8;padding:2px 6px;border-radius:3px;font-size:12px">pLTV ≥ 60% 且 B浓度 ≥ 70% 且 版位 = 站内</code>
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>条件翻译为天梯查询任务</strong><br>
+            策略保存时，系统将标签条件结构化为天梯平台可识别的特征查询表达式（布尔树），提交给天梯平台的<strong>人群圈选引擎</strong>作为计算任务。策略状态随即切换为"人群圈选中"。
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>天梯平台全量用户扫描</strong><br>
+            天梯平台在 T+1 批次计算窗口内，对全量 <strong>userid</strong> 逐条评估是否满足策略的标签条件组合：
+            <ul style="margin:8px 0 0 16px;font-size:13px;color:#444;line-height:2">
+              <li>读取该 userid 在各标签维度上的特征值快照（pLTV、B浓度、版位偏好等）</li>
+              <li>按策略配置的 AND/OR 布尔逻辑计算命中结果</li>
+              <li>多个规则块之间取 <strong>OR（并集）</strong>关系（满足任一规则块即命中）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <strong>生成人群包（userid 集合）</strong><br>
+            扫描完成后，天梯平台输出一个<strong>人群包文件</strong>，包含所有命中条件的 userid 列表。人群包写入 RTA 策略的圈选结果存储（如 ODPS 表或 KV 索引）。<br>
+            策略状态自动切换为"人群圈选完成"（前端可手动上线）。
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">5</span>
+          <div class="step-content">
+            <strong>业务手动上线策略</strong><br>
+            人群包就绪后，业务人员在 RTA 策略管理页点击"上线"→通过5项校验弹窗确认→策略状态变为"已上线"。此时策略的 userid 人群包被加载到 RTA 实时竞价链路的查询索引中，可供实时请求查询。
+          </div>
+        </div>
+      </div>
+
+      <h4 class="mini-title">规则块之间的逻辑关系</h4>
+      <table class="doc-table">
+        <thead><tr><th>层级</th><th>逻辑关系</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>同一规则块内 · 相邻条件之间</td><td>可独立配置 AND（且）或 OR（或）</td><td>每对相邻条件的连接符独立控制，例：条件1 且 条件2 或 条件3</td></tr>
+          <tr><td>同一规则块内 · 整体语义</td><td>按条件间连接符逐条求值</td><td>先处理所有 AND 连接的条件组，再与 OR 关联的结果取并集</td></tr>
+          <tr><td>多个规则块之间</td><td>OR（并集）</td><td>满足任意一个规则块的 userid，均纳入本策略人群包</td></tr>
+          <tr><td>B/C 用户策略之间</td><td>独立计算，分别存储</td><td>B用户人群包和C用户人群包分别圈选，RTA命中时根据用户身份选用对应出价</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4.3 DeviceID 映射 -->
+    <span class="section-anchor" id="crowd-did-mapping"></span>
+    <h3 class="sub-title">4.3 DeviceID ↔ UserID 映射机制</h3>
+    <div class="card">
+      <div class="tip tip-warn"><span class="tip-icon">⚠️</span><div>RTA 实时请求由广告媒体平台发起，请求中携带的是用户设备标识（deviceid，如 IDFA/OAID/IMEI），而天梯平台的人群包基于 1688 业务侧的 userid。因此需要一个 <strong>deviceid → userid 的映射层</strong>来打通两侧数据。</div></div>
+
+      <h4 class="mini-title">映射数据来源</h4>
+      <table class="doc-table">
+        <thead><tr><th>数据源</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>1688 App 用户行为日志</td><td>用户在 1688 App 内的浏览/点击/下单行为，会带上设备信息和登录 userid，形成 deviceid→userid 的关联记录</td></tr>
+          <tr><td>广告平台 Callback 数据</td><td>媒体平台广告点击回调中包含 deviceid 和下载/激活事件，与 1688 账号关联后建立映射</td></tr>
+          <tr><td>第三方数据交换（DMP）</td><td>部分渠道（Tanx）通过 DMP 数据交换，提供经加密脱敏的 deviceid↔userid 匹配对</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">映射表维护机制</h4>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="step-num">1</span>
+          <div class="step-content"><strong>离线批量构建</strong>：每日 T+1 批次，对近 N 天（通常 30 天）有行为的设备全量刷新 deviceid→userid 映射关系，写入 KV 存储（如 Tair/Redis 集群）。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">2</span>
+          <div class="step-content"><strong>近实时增量更新</strong>：对当日新登录/新激活设备，通过消息队列（MQ）增量同步至 KV，延迟约 5～30 分钟，减少首日新用户的映射空洞。</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">3</span>
+          <div class="step-content"><strong>一设备多账号处理</strong>：同一 deviceid 可能关联多个 userid（家庭共用设备、多账号登录），映射表保留置信度最高的主 userid，或通过加权策略选择最优映射。</div>
+        </div>
+      </div>
+
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 映射覆盖率与衰减</div>
+        <ul class="rule-list">
+          <li>并非所有 deviceid 都能映射到 userid——未在 1688 App 登录过的设备无法建立关联，称为<strong>游客设备</strong>，映射结果为空。</li>
+          <li>实际映射覆盖率因渠道而异（通常为 40%～75%）：Tanx（已登录用户较多，覆盖率高）>  快手 ≈ 巨量引擎 > 腾讯。</li>
+          <li>映射关系随时间衰减：超过 <strong>30 天</strong>未活跃的设备，映射置信度降低，可能被清除或降权。</li>
+          <li>无法映射的 deviceid，RTA 侧按<strong>未命中</strong>处理（不溢价出价，走默认底价逻辑）。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4.4 RTA命中判断 -->
+    <span class="section-anchor" id="crowd-rta-hitcheck"></span>
+    <h3 class="sub-title">4.4 RTA 实时请求命中判断逻辑</h3>
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>当广告媒体平台发起一次 RTA 请求时，RTA 服务在毫秒级内完成以下查询链路，决定是否溢价出价及出价系数。</div></div>
+
+      <h4 class="mini-title">实时命中判断流程</h4>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>接收 RTA 请求</strong><br>
+            媒体平台（Tanx/巨量引擎/腾讯/快手）发起 RTA 实时竞价请求，请求体中携带：
+            <ul style="margin:6px 0 0 16px;font-size:13px;color:#444;line-height:2">
+              <li><code style="background:#f0f3f8;padding:1px 5px;border-radius:3px;font-size:12px">deviceid</code>：设备标识（iOS 为 IDFA，Android 为 OAID/IMEI）</li>
+              <li><code style="background:#f0f3f8;padding:1px 5px;border-radius:3px;font-size:12px">rtaid</code>：本次请求对应的 RTAID 编号</li>
+              <li>版位、请求时间、竞价底价等上下文信息</li>
+            </ul>
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>DeviceID → UserID 查询</strong><br>
+            RTA 服务以 deviceid 为 key，查询 KV 映射表，获取对应的 userid。<br>
+            <span style="color:#cf1322;font-size:12.5px">若查询为空（游客设备），跳转至步骤 6，按无命中处理。</span>
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>确定候选 RTA 策略</strong><br>
+            根据请求中的 rtaid，查询该 RTAID 当前绑定的 RTA 实验，以及实验中各分组（实验组/对照组/空白组）挂载的已上线 RTA 策略列表。
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <strong>UserID 命中人群包查询</strong><br>
+            以 userid 为 key，在各候选策略的人群包索引（KV）中查询是否命中：
+            <ul style="margin:6px 0 0 16px;font-size:13px;color:#444;line-height:2">
+              <li>命中某策略的人群包 → 该策略对此用户<strong>有效</strong></li>
+              <li>同时查询用户类型（B/C 用户标识），选用对应的 B/C 出价规则</li>
+              <li>若命中多个规则块 → 取命中的<strong>最高溢价系数</strong>规则块的出价</li>
+            </ul>
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">5</span>
+          <div class="step-content">
+            <strong>实验分桶归属判断</strong><br>
+            对命中人群包的用户，根据其 userid 的哈希值（Zeus 分流 或 天渠分流）确定其所在分桶（0～9），从而确定该用户命中的是实验组、对照组还是空白组，进而选用对应策略的出价系数。
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="flow-step">
+          <span class="step-num">6</span>
+          <div class="step-content">
+            <strong>出价决策 & 返回</strong><br>
+            <table style="font-size:12.5px;border-collapse:collapse;margin-top:6px" class="doc-table">
+              <thead><tr><th>命中情况</th><th>出价策略</th></tr></thead>
+              <tbody>
+                <tr><td>命中人群包 + 实验组</td><td>按实验组策略的出价系数/CPA/CPC/ROI溢价出价</td></tr>
+                <tr><td>命中人群包 + 对照组</td><td>按对照组策略出价（通常为保守基准系数）</td></tr>
+                <tr><td>命中人群包 + 空白组</td><td>不出价（空白对照，观察自然流量）</td></tr>
+                <tr><td>未命中人群包</td><td>不出价或走默认底价兜底逻辑</td></tr>
+                <tr><td>deviceid → userid 映射为空</td><td>不出价（游客设备）</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="mini-title">全链路时序图</h4>
+      <div class="card" style="background:#1a2332;color:#e8ecf0;padding:16px 20px;font-family:monospace;font-size:12.5px;line-height:2;border:none">
+        <div>媒体平台 ──[RTA请求: deviceid + rtaid]──▶ RTA服务</div>
+        <div style="margin-left:20px;color:#95de64">RTA服务内部：</div>
+        <div style="margin-left:40px">① 查 KV[deviceid] ──▶ userid（或空→不出价）</div>
+        <div style="margin-left:40px">② 查 RTAID绑定 ──▶ 候选实验 + 各组策略列表</div>
+        <div style="margin-left:40px">③ 查 KV[userid + 策略ID] ──▶ 人群包命中状态</div>
+        <div style="margin-left:40px">④ 判断 userid 哈希分桶 ──▶ 实验组/对照组/空白组</div>
+        <div style="margin-left:40px">⑤ 查人群包 + 识别B/C ──▶ 匹配出价规则块</div>
+        <div style="margin-left:40px">⑥ 返回出价系数 / CPA目标 / 不出价</div>
+        <div style="color:#aaa;margin-top:4px">↑ 全程耗时要求 &lt; 30ms（媒体平台超时阈值）</div>
+      </div>
+    </div>
+
+    <!-- 4.5 关键约束 -->
+    <span class="section-anchor" id="crowd-constraints"></span>
+    <h3 class="sub-title">4.5 关键约束与边界条件</h3>
+    <div class="card">
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 人群包时效性约束</div>
+        <ul class="rule-list">
+          <li>人群包每日 T+1 刷新，当日新满足条件的用户最晚次日生效；当日不再满足条件的用户最晚次日被移出人群包。</li>
+          <li>业务侧需预留 <strong>1 个自然日</strong>的圈选等待时间，"新建"策略不可直接上线，需等待"人群圈选中"状态结束。</li>
+          <li>紧急场景（如大促前夜需要快速上线新策略），可申请天梯平台触发<strong>实时圈选</strong>（需数据研发协助），但覆盖率可能低于 T+1 批次。</li>
+        </ul>
+      </div>
+
+      <div class="rule-box" style="border-color:#ffccc7;background:#fff2f0">
+        <div class="rule-title" style="color:#cf1322">🚫 策略上线前必须通过的5项校验</div>
+        <ul class="rule-list">
+          <li><strong>人群包圈选已完成</strong>：天梯平台确认本策略的圈选任务已执行完毕，人群包非空。</li>
+          <li><strong>策略规则配置完整</strong>：每个规则块均有有效的出价系数和至少一个完整条件，无空规则块。</li>
+          <li><strong>绑定 RTAID 已确认</strong>：策略绑定的 RTAID 存在且处于正常状态（未下线）。</li>
+          <li><strong>策略版本检查</strong>：策略版本与圈选人群包版本一致，不存在编辑后未重新圈选的情况。</li>
+          <li><strong>实验绑定校验</strong>：若策略已被实验绑定，验证实验与 RTAID 的映射关系正确，分桶配置无冲突。</li>
+        </ul>
+      </div>
+
+      <div class="rule-box" style="border-color:#b7eb8f;background:#f6ffed">
+        <div class="rule-title" style="color:#237804">✅ 性能与容量约束</div>
+        <ul class="rule-list">
+          <li><strong>RTA 响应时延 &lt; 30ms</strong>：媒体平台（Tanx/巨量引擎/腾讯/快手）对 RTA 接口的超时阈值通常为 30ms，超时不出价。因此 deviceid→userid 查询和人群包命中查询必须使用内存级 KV（如 Tair）。</li>
+          <li><strong>人群包大小限制</strong>：单策略人群包建议不超过 <strong>5000 万 userid</strong>，过大会影响 KV 加载和查询性能；如需全量覆盖，建议使用布隆过滤器压缩存储。</li>
+          <li><strong>策略并发上线数量</strong>：同一 RTAID 下同时处于"已上线"状态的策略数量建议不超过 <strong>20 个</strong>，超出时需评估查询链路延迟风险。</li>
+          <li><strong>映射表 KV 容量</strong>：全量 deviceid→userid 映射表约占 <strong>数十 GB</strong> KV 存储空间，需由基础设施团队预估并分配容量。</li>
+        </ul>
+      </div>
+
+      <h4 class="mini-title">策略编辑后的重新圈选触发规则</h4>
+      <table class="doc-table">
+        <thead><tr><th>操作类型</th><th>是否触发重新圈选</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>修改出价系数（仅数值变化）</td><td>❌ 不触发</td><td>出价系数不影响人群范围，人群包可复用</td></tr>
+          <tr><td>新增/删除标签条件</td><td>✅ 触发重新圈选</td><td>人群范围发生变化，需重新圈选，策略回到"人群圈选中"状态</td></tr>
+          <tr><td>修改条件值（如 pLTV 阈值调整）</td><td>✅ 触发重新圈选</td><td>同上</td></tr>
+          <tr><td>切换 AND/OR 连接符</td><td>✅ 触发重新圈选</td><td>布尔逻辑变化导致人群范围变化</td></tr>
+          <tr><td>新增/删除规则块</td><td>✅ 触发重新圈选</td><td>OR 关系下人群并集范围发生变化</td></tr>
+          <tr><td>仅修改策略名称/备注</td><td>❌ 不触发</td><td>元数据修改，不影响人群逻辑</td></tr>
+          <tr><td>复制策略</td><td>✅ 触发新圈选</td><td>新策略需独立完成首次圈选，从"新建"→"人群圈选中"流转</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 全局约束 ===== -->
+  <span class="section-anchor" id="constraints"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">✦</span>全局交互规则与约束</h2>
+
+    <div class="card">
+      <h3 class="sub-title" style="margin-top:0">Tab 切换</h3>
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>Tab 顺序为：<strong>RTA 策略管理</strong>（第 1 Tab）→ <strong>RTA 实验管理</strong>（第 2 Tab）→ <strong>RTAID 管理</strong>（第 3 Tab）。</div></div>
+      <table class="doc-table">
+        <thead><tr><th>切换目标</th><th>右上角主操作按鈕</th></tr></thead>
+        <tbody>
+          <tr><td>RTA 策略管理</td><td>+ 新增 RTA策略</td></tr>
+          <tr><td>RTA 实验管理</td><td>+ 新建 RTA实验</td></tr>
+          <tr><td>RTAID 管理</td><td>+ 新增 RTAID</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub-title">Toast 提示</h3>
+      <p>所有操作反馈、错误提示均以顶部 Toast 形式展示，持续 3～5 秒后自动消失。关键约束拦截（如策略下线被阻止）使用较长持续时间（约 4.5 秒）。</p>
+
+      <h3 class="sub-title">弹窗交互</h3>
+      <ul style="margin-left:20px;color:#444;font-size:13.5px;line-height:2.2">
+        <li>抽屉式弹窗从右侧滑入（transform translateX 动画，300ms cubic-bezier），半透明遮罩覆盖背景。</li>
+        <li>点击遮罩区域不关闭弹窗（需点击关闭按钮或取消按钮）；居中弹窗点击遮罩可关闭。</li>
+        <li>弹窗内容区可独立滚动，header 和 footer 固定。</li>
+      </ul>
+
+      <h3 class="sub-title">状态管理</h3>
+      <table class="doc-table">
+        <thead><tr><th>实体</th><th>状态</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3">RTA 实验</td><td><span class="status running"><span class="s-dot"></span>实验中</span></td><td>实验正在运行，绿色呼吸灯动画</td></tr>
+          <tr><td><span class="status pushed">● 已推全</span></td><td>实验策略已推广至全量分桶，蓝色</td></tr>
+          <tr><td><span class="status offline">✕ 已下线</span></td><td>实验已停止，红色</td></tr>
+          <tr><td rowspan="4">RTA 策略</td><td>新建</td><td>策略已配置，人群圈选尚未完成，上线按鈕置灰</td></tr>
+          <tr><td>人群圈选中</td><td>正在进行人群圈选（蓝色+闪烁动画），上线按鈕置灰</td></tr>
+          <tr><td>已上线</td><td>人群圈选完成且手动推送上线，绿色，可正常挂载实验</td></tr>
+          <tr><td>已下线</td><td>策略已手动下线，灰色，不再生效</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 审批流程 ===== -->
+  <span class="section-anchor" id="approval"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">✦</span>审批流程</h2>
+
+    <p>RTA 策略与实验的所有<strong>写操作</strong>（发布、修改、回退、扩桶等）均需经过多级审批，确保变更经过数科和业务侧的双重把关。审批通道为平台内部工单系统，各角色可在工单中心查看待审批任务。</p>
+
+    <!-- 通用审批节点 -->
+    <span class="section-anchor" id="approval-overview"></span>
+    <h3 class="sub-title">通用审批节点说明</h3>
+    <div class="card">
+      <table class="doc-table">
+        <thead><tr><th>节点</th><th>角色</th><th>人员</th><th>职责说明</th><th>节点颜色</th></tr></thead>
+        <tbody>
+          <tr><td>Step 1</td><td>业务发起人</td><td>稚磊 / 伏灵 / 烙烙 等</td><td>填写变更内容与原因，提交工单，状态立即变为"已提交"</td><td>🔵 蓝色（已完成）</td></tr>
+          <tr><td>Step 2</td><td>数科审批</td><td>彦孜</td><td>从数据科学角度评估变更合理性（出价合规、人群包就绪、实验设计规范等）；可通过或驳回</td><td>🟠 橙色（进行中）/ ⬜ 灰色（待处理）</td></tr>
+          <tr><td>Step 3</td><td>业务负责人</td><td>宸刚</td><td>从业务侧确认变更目标与资源合理性；对预算/出价幅度较大的变更需重点把关</td><td>⬜ 灰色（待处理）</td></tr>
+          <tr><td>Step 4</td><td>最终审批</td><td>会成</td><td>最终决策节点，仅高风险操作（新建实验、推全、版本回退）需进入此节点</td><td>⬜ 灰色（待处理）</td></tr>
+        </tbody>
+      </table>
+      <div class="rule-box">
+        <div class="rule-title">⚠️ 审批节点通用规则</div>
+        <ul class="rule-list">
+          <li>审批节点为<strong>串行顺序</strong>：前一节点通过后，下一节点审批人才会收到待审批通知，不可跳级。</li>
+          <li>任意节点<strong>驳回</strong>后，工单状态变为"已驳回"，发起人收到通知，需修改后重新提交（版本号重置或保留，由具体操作类型决定）。</li>
+          <li>审批人可在驳回时填写驳回原因，发起人可在工单详情中查看。</li>
+          <li>工单提交后至最终审批通过期间，对应实体（策略/实验）的相关字段展示"审批中"徽章，前端不允许再次对同一实体发起相同类型工单（防止重复提交）。</li>
+          <li>紧急场景（如大促期间）可通过<strong>加急通道</strong>缩短审批时效；加急需在工单中勾选"加急"并填写原因，各节点审批人收到高优先级通知。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 策略工作流 -->
+    <span class="section-anchor" id="approval-strategy"></span>
+    <h3 class="sub-title">RTA 策略发布工作流</h3>
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>策略相关的工作流覆盖：策略上线（首次发布）、出价修改（编辑后重新发布）、策略版本回退三类场景。</div></div>
+
+      <h4 class="mini-title">① 策略上线（首次发布 / 重新上线）</h4>
+      <p>策略状态为"已下线"或完成人群圈选后，业务人员点击"上线"触发以下流程：</p>
+      <div class="flow-steps">
+        <div class="flow-step"><span class="step-num">1</span><div class="step-content"><strong>发起人提交上线申请</strong>：点击策略列表"上线"→ 通过5项自动校验弹窗 → 点击"确认上线"提交工单。工单内容：策略名称、版本号、出价模式、人群标签摘要、上线原因。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">2</span><div class="step-content"><strong>数科审批（彦孜）</strong>：确认人群包就绪、出价系数合规、策略无历史异常。<span style="color:#cf1322">驳回则策略回到"已下线"或"人群圈选中"状态，不可继续使用。</span></div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">3</span><div class="step-content"><strong>业务负责人审批（宸刚）</strong>：确认上线的业务目标合理、不与其他在投策略冲突。通过后策略状态变为<strong>"已上线"</strong>，正式生效。</div></div>
+      </div>
+      <div class="tip tip-success" style="margin-top:12px"><span class="tip-icon">✅</span><div>策略上线：<strong>3 级审批</strong>（发起人 → 数科 → 业务负责人）</div></div>
+
+      <div class="divider"></div>
+
+      <h4 class="mini-title">② 出价修改（编辑策略后重新发布）</h4>
+      <p>已上线策略需修改出价系数/出价模式/人群规则时，须先下线策略，编辑完成后重新发起上线工单。<br>如果修改<strong>仅涉及出价系数数值</strong>（不触发重新圈选），走简化审批；如果修改涉及人群规则（触发重新圈选），需等圈选完成后走完整审批。</p>
+      <table class="doc-table">
+        <thead><tr><th>修改类型</th><th>审批级数</th><th>审批节点</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>仅出价系数/底价调整（幅度 ≤ 20%）</td><td>2 级</td><td>发起人 → 数科审批（彦孜）</td><td>低风险，数科确认后即可生效</td></tr>
+          <tr><td>出价系数调整（幅度 &gt; 20%）或出价模式变更</td><td>3 级</td><td>发起人 → 数科审批 → 业务负责人（宸刚）</td><td>中风险，需业务负责人把关</td></tr>
+          <tr><td>人群规则修改（触发重新圈选）</td><td>3 级</td><td>发起人 → 数科审批 → 业务负责人（宸刚）</td><td>圈选完成后才能走审批，完整上线流程</td></tr>
+          <tr><td>出价模式变更 + 人群规则同时修改</td><td>4 级</td><td>发起人 → 数科审批 → 业务负责人 → 最终审批（会成）</td><td>高风险，需最高级审批</td></tr>
+        </tbody>
+      </table>
+
+      <div class="divider"></div>
+
+      <h4 class="mini-title">③ 策略版本回退</h4>
+      <p>在版本日志弹窗中，点击历史版本的"⏪ 回退至此版本"，触发版本回退工单：</p>
+      <div class="flow-steps">
+        <div class="flow-step"><span class="step-num">1</span><div class="step-content"><strong>发起人提交回退申请</strong>：选择目标版本 → 弹出确认弹窗（展示当前版本 vs 目标版本对比 + 不可撤销警告）→ 确认后提交工单。工单内容：策略名称、当前版本号、目标回退版本号、回退原因（必填）。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">2</span><div class="step-content"><strong>数科审批（彦孜）</strong>：评估目标历史版本的人群包是否仍有效（历史圈选结果是否过期）、出价是否合规。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">3</span><div class="step-content"><strong>业务负责人审批（宸刚）</strong>：确认回退理由充分，无业务风险。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">4</span><div class="step-content"><strong>最终审批（会成）</strong>：版本回退属于高风险操作，需最终决策人把关。<br>审批通过后，系统自动将策略回退至目标版本，生成新版本号（vN+1，记录"版本回退"变更类型），当前版本的人群包若已过期则需重新圈选。</div></div>
+      </div>
+      <div class="tip tip-warn" style="margin-top:12px"><span class="tip-icon">⚠️</span><div>策略版本回退：<strong>4 级审批</strong>（发起人 → 数科 → 业务负责人 → 最终审批）。回退操作<strong>不可撤销</strong>，请在提交工单前确认目标版本配置。</div></div>
+    </div>
+
+    <!-- 实验工作流 -->
+    <span class="section-anchor" id="approval-exp"></span>
+    <h3 class="sub-title">RTA 实验发布工作流</h3>
+    <div class="card">
+      <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>实验相关的工作流覆盖：新建实验、修改实验配置、扩桶申请、推全（自动扩桶）四类场景。</div></div>
+
+      <h4 class="mini-title">① 新建 RTA 实验</h4>
+      <div class="flow-steps">
+        <div class="flow-step"><span class="step-num">1</span><div class="step-content"><strong>发起人提交新建申请</strong>：填写实验弹窗所有必填字段（宙斯实验标识、渠道、RTAID、实验名称、三组策略分配）→ 点击"提交审批"。工单内容：实验配置快照（含分桶分配方案）、关联 RTAID、预计实验周期、实验目标说明。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">2</span><div class="step-content"><strong>数科审批（彦孜）</strong>：验证实验设计合理性——分桶是否均衡、策略是否已上线且人群包就绪、宙斯实验 ID 是否合法、是否与现有实验存在分桶冲突。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">3</span><div class="step-content"><strong>业务负责人审批（宸刚）</strong>：确认实验业务目标、预算合理性、与其他实验的策略资源不冲突。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">4</span><div class="step-content"><strong>最终审批（会成）</strong>：确认新实验上线时机与业务节奏匹配。审批通过后，实验状态变为<strong>"实验中"</strong>，宙斯平台同步开启流量分配。</div></div>
+      </div>
+      <div class="tip tip-warn" style="margin-top:12px"><span class="tip-icon">⚠️</span><div>新建 RTA 实验：<strong>4 级审批</strong>（发起人 → 数科 → 业务负责人 → 最终审批）</div></div>
+
+      <div class="divider"></div>
+
+      <h4 class="mini-title">② 修改实验配置</h4>
+      <p>实验"实验中"或"已下线"状态下，点击"编辑"修改实验配置后提交：</p>
+      <table class="doc-table">
+        <thead><tr><th>修改内容</th><th>审批级数</th><th>审批节点</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>修改实验描述/备注（非核心字段）</td><td>1 级</td><td>发起人自审（自动通过）</td><td>纯元数据修改，无需外部审批</td></tr>
+          <tr><td>修改策略绑定（替换分组内策略）</td><td>3 级</td><td>发起人 → 数科审批 → 业务负责人（宸刚）</td><td>需确认替换策略的人群包状态</td></tr>
+          <tr><td>修改分桶分配方案（扩缩桶数量）</td><td>3 级</td><td>发起人 → 数科审批 → 业务负责人（宸刚）</td><td>流量重新分配，中等风险</td></tr>
+          <tr><td>同时变更策略 + 分桶 + RTAID</td><td>4 级</td><td>发起人 → 数科审批 → 业务负责人 → 最终审批（会成）</td><td>全量配置变更，高风险</td></tr>
+        </tbody>
+      </table>
+      <div class="tip tip-info" style="margin-top:8px"><span class="tip-icon">ℹ️</span><div>修改中的实验处于"审批中"状态，期间不允许重复编辑；审批驳回后实验配置恢复至修改前状态。</div></div>
+
+      <div class="divider"></div>
+
+      <h4 class="mini-title">③ 扩桶申请</h4>
+      <p>在实验报告弹窗或实验列表点击"扩桶"，选择胜出策略和目标分桶后提交工单：</p>
+      <div class="flow-steps">
+        <div class="flow-step"><span class="step-num">1</span><div class="step-content"><strong>发起人提交扩桶申请</strong>：在扩桶弹窗完成前置条件检查 → 选择策略和目标分桶 → 点击"提交扩桶申请"。工单内容：实验名称、胜出策略、扩桶前后分桶对比、扩桶依据（附实验报告核心数据）。<br><span style="color:#cf1322">前置条件未全部通过时，"提交扩桶申请"按钮置灰，不可提交。</span></div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">2</span><div class="step-content"><strong>数科审批（彦孜）</strong>：验证实验数据显著性（p 值是否达标）、护栏指标（ROI₀）是否通过、扩桶的胜出策略是否确为最优。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">3</span><div class="step-content"><strong>业务负责人审批（宸刚）</strong>：确认扩桶策略的出价合理，不会对整体 ROAS 造成负面影响。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">4</span><div class="step-content"><strong>最终审批（会成）</strong>：审批通过后，系统执行扩桶操作：目标分桶的策略替换为胜出策略，实验状态<strong>默认置为"已下线"</strong>（需重新上线以确认扩桶后配置生效）。</div></div>
+      </div>
+      <div class="tip tip-warn" style="margin-top:12px"><span class="tip-icon">⚠️</span><div>扩桶申请：<strong>4 级审批</strong>。<strong>扩桶审批通过后，原实验状态默认置为下线</strong>，需业务人员手动重新上线确认。</div></div>
+
+      <div class="divider"></div>
+
+      <h4 class="mini-title">④ 推全（自动分级扩桶）</h4>
+      <p>在实验列表点击"推全"，完成 Step1 算法推荐分析 + Step2 分级计划确认后提交：</p>
+      <div class="flow-steps">
+        <div class="flow-step"><span class="step-num">1</span><div class="step-content"><strong>发起人提交推全申请</strong>：确认系统推荐的胜出策略及分级扩桶计划 → 勾选"已确认以上内容，同意执行扩桶操作" → 点击"确认执行"提交工单。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">2</span><div class="step-content"><strong>数科审批（彦孜）</strong>：验证系统推荐算法分析结论、确认各阶段扩桶节奏合理（每阶段不超过 3 个桶）、检查护栏指标全部通过。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">3</span><div class="step-content"><strong>业务负责人审批（宸刚）</strong>：确认推全时机（大促/非大促节奏匹配）、预算充足、不影响其他并行实验。</div></div>
+        <div class="step-line"></div>
+        <div class="flow-step"><span class="step-num">4</span><div class="step-content"><strong>最终审批（会成）</strong>：审批通过后，系统<strong>分阶段执行扩桶计划</strong>（每个阶段间隔指定天数），实验状态变为<strong>"已推全"</strong>，不再接受新的策略调整工单。</div></div>
+      </div>
+      <div class="tip tip-warn" style="margin-top:12px"><span class="tip-icon">⚠️</span><div>推全：<strong>4 级审批</strong>，且推全完成后实验状态不可逆转为"实验中"，请确认推全决策已最终确定。</div></div>
+    </div>
+
+    <!-- 审批状态机 -->
+    <span class="section-anchor" id="approval-state"></span>
+    <h3 class="sub-title">审批状态机</h3>
+    <div class="card">
+      <h4 class="mini-title">工单状态流转</h4>
+      <table class="doc-table">
+        <thead><tr><th>工单状态</th><th>颜色</th><th>含义</th><th>下一状态</th></tr></thead>
+        <tbody>
+          <tr><td>草稿</td><td>灰色</td><td>填写中，尚未提交</td><td>待审批（提交后）</td></tr>
+          <tr><td>待审批</td><td>橙色</td><td>当前节点审批人收到待办，正在等待审核</td><td>审批中 / 已驳回</td></tr>
+          <tr><td>审批中</td><td>蓝色</td><td>已通过部分节点，串行流转至下一节点</td><td>已通过 / 已驳回</td></tr>
+          <tr><td>已通过</td><td>绿色</td><td>所有节点审批完成，变更正式生效</td><td>（终态）</td></tr>
+          <tr><td>已驳回</td><td>红色</td><td>某节点审批人拒绝，变更不生效，实体回滚</td><td>草稿（修改后重新提交）</td></tr>
+          <tr><td>已撤回</td><td>灰色</td><td>发起人在审批通过前主动撤回工单</td><td>草稿（修改后重新提交）</td></tr>
+        </tbody>
+      </table>
+
+      <h4 class="mini-title">各操作类型审批级数速查表</h4>
+      <table class="doc-table">
+        <thead><tr><th>操作类型</th><th>所属模块</th><th>审批级数</th><th>需要最终审批（会成）</th></tr></thead>
+        <tbody>
+          <tr><td>策略上线（首次 / 重新上线）</td><td>RTA 策略</td><td>3 级</td><td>❌</td></tr>
+          <tr><td>出价系数微调（幅度 ≤ 20%）</td><td>RTA 策略</td><td>2 级</td><td>❌</td></tr>
+          <tr><td>出价系数大幅调整（幅度 &gt; 20%）/ 出价模式变更</td><td>RTA 策略</td><td>3 级</td><td>❌</td></tr>
+          <tr><td>人群规则修改（触发重新圈选）</td><td>RTA 策略</td><td>3 级</td><td>❌</td></tr>
+          <tr><td>出价模式 + 人群规则同时变更</td><td>RTA 策略</td><td>4 级</td><td>✅</td></tr>
+          <tr><td>策略版本回退</td><td>RTA 策略</td><td>4 级</td><td>✅</td></tr>
+          <tr><td>新建 RTA 实验</td><td>RTA 实验</td><td>4 级</td><td>✅</td></tr>
+          <tr><td>修改实验描述/备注</td><td>RTA 实验</td><td>1 级（自动）</td><td>❌</td></tr>
+          <tr><td>修改实验策略绑定 / 分桶方案</td><td>RTA 实验</td><td>3 级</td><td>❌</td></tr>
+          <tr><td>全量配置变更（策略+分桶+RTAID）</td><td>RTA 实验</td><td>4 级</td><td>✅</td></tr>
+          <tr><td>扩桶申请</td><td>RTA 实验</td><td>4 级</td><td>✅</td></tr>
+          <tr><td>推全（自动分级扩桶）</td><td>RTA 实验</td><td>4 级</td><td>✅</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 变更记录 ===== -->
+  <span class="section-anchor" id="changelog"></span>
+  <div class="section">
+    <h2 class="sec-title"><span class="sec-num">✦</span>变更记录</h2>
+    <div class="card">
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">初版 PRD 文档，覆盖 RTAID 管理、RTA 实验管理、RTA 策略管理三大模块全部页面与交互。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">实验管理“推全”改名自“自动扩桶”；新增自动扩桶分级机制（分桶地图 + 分阶计划 + 操作摘要）。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-fix">修改</span>
+        <span class="cl-text">策略下线约束：绑定实验中的策略不可直接下线，需先下线关联实验。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">RTA 策略管理新增策略版本列，v1~vN 版本标签可点击查看版本日志时间线；版本日志展示生效时间区间（XX-XX ~ XX-XX）。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">RTA 策略管理新增策略状态列：新建 / 人群圈选中（蓝色闪烁） / 已上线（绿色） / 已下线（灰色）四个生命周期状态。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">策略操作列新增“上线”按鈕：人群圈选未完成时置灰，点击后展示完整校验平面。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">策略操作列新增“复制”按鈕：预填原策略配置并设置副本名称、显示橙色提示 banner。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">策略操作列新增“日志”按鈕：展示策略完整版本时间线，历史版本支持“查看配置”和“版本回退”功能。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">策略名称列可点击（蓝色下划线），直接打开策略配置详情弹窗；操作列“详情”按鈕删除。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-fix">修改</span>
+        <span class="cl-text">下线按鈕置灰规则更新：策略已挂载未下线实验时，下线按鈕置灰并显示 tooltip 提示必须先解绑实验。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-fix">修改</span>
+        <span class="cl-text">RTAID 弹窗移除广告主账号和修改人字段（系统自动记录）；非 Tanx 渠道选择后媒体渠道自动赋値为渠道名。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-01</span>
+        <span class="cl-badge cl-fix">修改</span>
+        <span class="cl-text">Tab 顺序调整：策略管理 > 实验管理 > RTAID 管理。实验搜索栏新增“RTA实验名称”筛选字段。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-02</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">策略绑定实验可点击跳转到实验管理页并自动打开实验配置详情弹窗；支持一个策略被多个实验绑定展示。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-02</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">PRD v2.0：同步 Demo 最新功能，新增 3.4 策略版本日志弹窗、3.5 上线校验弹窗两个子章节。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-02</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">PRD v2.1：补充 2.2 实验编辑弹窗详细规则（分桶互斥实时联动、必填校验、新建vs编辑模式差异）；补充 3.2 策略编辑弹窗详细规则（各标签字段配置规则、且/或连接符交互、各模式差异、规则块操作说明）。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-02</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">PRD v2.2：新增第 4 章"人群圈选机制"，覆盖天梯平台标签体系（7大维度）、圈选全流程（5步）、deviceid→userid映射机制、RTA实时命中判断链路（6步+时序图）、5项上线校验详解、策略编辑后重新圈选触发规则表。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-07-02</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">PRD v2.3：完整重写审批流程章节，新增通用审批节点说明、RTA策略发布工作流（上线/出价修改/版本回退三类）、RTA实验发布工作流（新建/修改/扩桶/推全四类）、审批状态机（6种状态流转）及各操作类型审批级数速查表（12项）。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">宙斯实验唯一标识字段新增"+ 新增宙斯实验 ↗"外链按钮，跳转至宙斯实验平台。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">实验管理"推全"改为"扩桶"；新增自动扩桶分级机制（分桶地图 + 分阶计划 + 操作摘要）。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-feat">新增</span>
+        <span class="cl-text">策略下线约束：绑定实验中的策略不可直接下线，需先下线关联实验。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-fix">修改</span>
+        <span class="cl-text">实验列表表头：RTAID 与实验状态徽章同行显示；状态徽章改为呼吸灯（实验中）/ 蓝色（已推全）/ 红色（已下线）三态。</span>
+      </div>
+      <div class="changelog-item">
+        <span class="cl-date">2026-06-29</span>
+        <span class="cl-badge cl-fix">修改</span>
+        <span class="cl-text">渠道字段改为媒体渠道，展示具体媒体（腾讯→广点通，Tanx→广点通/快手等具体渠道名）。</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:20px 0 40px;color:#bbb;font-size:12px">
+    天渠 RTA 管理平台 PRD · 版本 v1.0 · 2026-06-29 · 内部文档
+  </div>
+</main>
+
+<!-- 回到顶部 -->
+<button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
+
+<script>
+// 侧边导航高亮
+const navItems = document.querySelectorAll('.nav-item');
+const anchors = document.querySelectorAll('.section-anchor');
+
+function updateNav() {
+  let current = '';
+  anchors.forEach(el => {
+    if (window.scrollY + 100 >= el.offsetTop) current = el.id;
+  });
+  navItems.forEach(item => {
+    const href = item.getAttribute('href');
+    item.classList.toggle('active', href === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateNav, { passive: true });
+updateNav();
+</script>
+</body>
+</html>

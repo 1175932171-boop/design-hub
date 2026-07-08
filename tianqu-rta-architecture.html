@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天渠 RTA 系统架构图</title>
+<style>
+/* ============================= 基础 ============================= */
+:root {
+  --gray:   #64748b; --gray-bg:   #f8fafc; --gray-bd:   #e2e8f0; --gray-lt: #f1f5f9;
+  --blue:   #1d4ed8; --blue-bg:   #eff6ff; --blue-bd:   #bfdbfe; --blue-lt: #dbeafe;
+  --green:  #059669; --green-bg:  #f0fdf4; --green-bd:  #bbf7d0; --green-lt: #dcfce7;
+  --teal:   #0891b2; --teal-bg:   #f0f9ff; --teal-bd:   #bae6fd;
+  --purple: #7c3aed; --purple-bg: #faf5ff; --purple-bd: #e9d5ff; --purple-lt:#ede9fe;
+  --indigo: #4338ca; --indigo-bg: #eef2ff; --indigo-bd: #c7d2fe;
+  --amber:  #d97706; --amber-bg:  #fffbeb; --amber-bd:  #fde68a; --amber-lt: #fef3c7;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; background:#eef2f7; color:#1e293b; font-size:12.5px; }
+
+/* ============================= 页头 ============================= */
+.hd { background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#312e81 100%); padding:22px 48px 20px; display:flex; align-items:center; gap:18px; }
+.hd svg { width:42px; height:42px; flex-shrink:0; }
+.hd-info h1 { color:#fff; font-size:17px; font-weight:800; letter-spacing:.05em; }
+.hd-info p  { color:rgba(255,255,255,.55); font-size:11px; margin-top:3px; }
+.hd-pills { margin-left:auto; display:flex; gap:8px; }
+.pill { padding:4px 13px; border-radius:20px; font-size:10.5px; font-weight:700; }
+.pill-blue   { background:rgba(96,165,250,.2); color:#93c5fd; border:1px solid rgba(96,165,250,.3); }
+.pill-green  { background:rgba(52,211,153,.18); color:#6ee7b7; border:1px solid rgba(52,211,153,.25); }
+
+/* ============================= 主体 ============================= */
+.wrap { padding:28px 48px 44px; max-width:1400px; margin:0 auto; }
+
+/* ============================= 链路条 ============================= */
+.flow-bar { background:#fff; border:1.5px solid var(--blue-bd); border-radius:10px; padding:14px 20px; margin-bottom:26px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+.flow-bar-title { font-size:11.5px; font-weight:800; color:var(--blue); margin-bottom:10px; letter-spacing:.04em; }
+.flow-steps { display:flex; align-items:center; gap:0; overflow-x:auto; }
+.fs { display:flex; flex-direction:column; align-items:center; gap:3px; flex-shrink:0; }
+.fs-box { padding:7px 14px; border-radius:6px; font-size:11.5px; font-weight:700; white-space:nowrap; border:1.5px solid; }
+.fs-sub { font-size:9.5px; color:#94a3b8; }
+.fs-gray   { background:var(--gray-lt);   border-color:var(--gray-bd);  color:#334155; }
+.fs-blue   { background:var(--blue-bg);   border-color:var(--blue-bd);  color:var(--blue); }
+.fs-green  { background:var(--green-bg);  border-color:var(--green-bd); color:var(--green); }
+.fs-purple { background:var(--purple-bg); border-color:var(--purple-bd);color:var(--purple); }
+.fa { color:#94a3b8; font-size:16px; padding:0 4px; flex-shrink:0; margin-bottom:16px; }
+
+/* ============================= 层级布局 ============================= */
+.layer-wrap { display:flex; gap:0; align-items:stretch; margin-bottom:4px; }
+
+.layer-label {
+  width:108px; flex-shrink:0; display:flex; flex-direction:column;
+  justify-content:center; align-items:flex-end; padding-right:14px; gap:5px;
+}
+.ll-name { font-size:11.5px; font-weight:800; color:#fff; padding:5px 11px; border-radius:5px; white-space:nowrap; }
+.ll-sub  { font-size:10px; color:#94a3b8; text-align:right; line-height:1.5; }
+
+.layer-panel {
+  flex:1; border-radius:10px; padding:16px 18px 18px;
+  border:1.5px solid; position:relative;
+}
+/* 层颜色 */
+.lp-gray   { background:var(--gray-bg);   border-color:var(--gray-bd); }
+.lp-blue   { background:var(--blue-bg);   border-color:var(--blue-bd); }
+.lp-green  { background:var(--green-bg);  border-color:var(--green-bd);}
+.lp-purple { background:var(--purple-bg); border-color:var(--purple-bd);}
+.lp-amber  { background:var(--amber-bg);  border-color:var(--amber-bd);}
+
+.layer-panel-title { font-size:11px; font-weight:800; letter-spacing:.04em; margin-bottom:12px; display:flex; align-items:center; gap:7px; }
+.lpt-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* ============================= 卡片网格 ============================= */
+/* 等列数网格 */
+.grid-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.grid-5 { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+/* 特殊比例 */
+.grid-32 { display:grid; grid-template-columns:3fr 2fr; gap:10px; }
+.grid-5-sub { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:10px; }
+
+/* 行分隔标注 */
+.row-label { font-size:10.5px; font-weight:700; color:#6b7280; display:flex; align-items:center; gap:6px; margin:14px 0 8px; }
+.rl-line { flex:1; height:1px; background:rgba(0,0,0,.08); }
+
+/* ============================= 卡片 ============================= */
+.card { border-radius:7px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 4px rgba(0,0,0,.07); }
+.card-hd { padding:8px 12px; display:flex; align-items:center; gap:7px; flex-shrink:0; }
+.c-icon { font-size:14px; line-height:1; }
+.c-title { font-size:11.5px; font-weight:800; line-height:1.2; }
+.card-bd { padding:9px 12px 10px; flex:1; line-height:1.7; font-size:11px; color:#475569; }
+
+/* 卡片主题 */
+.ch-gray   { background:var(--gray-lt);   } .ch-gray .c-title   { color:#1e293b; }
+.ch-blue   { background:var(--blue);      } .ch-blue .c-title   { color:#fff; } .ch-blue .c-icon { filter:brightness(10); }
+.ch-green  { background:var(--green);     } .ch-green .c-title  { color:#fff; } .ch-green .c-icon { filter:brightness(10); }
+.ch-teal   { background:var(--teal);      } .ch-teal .c-title   { color:#fff; } .ch-teal .c-icon { filter:brightness(10); }
+.ch-purple { background:var(--purple);    } .ch-purple .c-title { color:#fff; } .ch-purple .c-icon { filter:brightness(10); }
+.ch-indigo { background:var(--indigo);    } .ch-indigo .c-title { color:#fff; } .ch-indigo .c-icon { filter:brightness(10); }
+.ch-amber  { background:var(--amber);     } .ch-amber .c-title  { color:#fff; } .ch-amber .c-icon { filter:brightness(10); }
+
+.cb-white  { background:#fff; }
+.cb-blue   { background:var(--blue-bg); }
+.cb-green  { background:var(--green-bg); }
+.cb-teal   { background:var(--teal-bg); }
+.cb-purple { background:var(--purple-bg); }
+.cb-indigo { background:var(--indigo-bg); }
+.cb-amber  { background:var(--amber-bg); }
+
+/* ============================= 标签 ============================= */
+.tags { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; }
+.t { padding:2px 7px; border-radius:3px; font-size:10px; font-weight:600; display:inline-block; }
+.t-blue   { background:var(--blue-lt);   color:var(--blue); }
+.t-green  { background:var(--green-lt);  color:#166534; }
+.t-purple { background:var(--purple-lt); color:#6b21a8; }
+.t-amber  { background:var(--amber-lt);  color:#92400e; }
+.t-gray   { background:var(--gray-lt);   color:#475569; }
+.t-indigo { background:var(--indigo-bg); color:var(--indigo); }
+
+/* ============================= 实验分组 ============================= */
+.alloc-row { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:5px; margin-top:6px; }
+.alloc-box { border-radius:5px; padding:5px 6px; text-align:center; border:1.5px solid; }
+.ab-exp1 { background:var(--blue-bg); border-color:var(--blue-bd); }
+.ab-exp2 { background:var(--green-bg); border-color:var(--green-bd); }
+.ab-ctrl { background:var(--amber-bg); border-color:var(--amber-bd); }
+.ab-blank { background:var(--gray-lt); border-color:var(--gray-bd); border-style:dashed; }
+.ab-name { font-size:9.5px; font-weight:700; color:#374151; }
+.ab-pct  { font-size:13px; font-weight:800; margin-top:1px; }
+.ab-exp1 .ab-pct { color:var(--blue); }
+.ab-exp2 .ab-pct { color:var(--green); }
+.ab-ctrl .ab-pct { color:var(--amber); }
+.ab-blank .ab-pct { color:var(--gray); }
+.alloc-hint { font-size:9.5px; color:#94a3b8; text-align:center; margin-top:4px; }
+
+/* ============================= 桶示意 ============================= */
+.buckets { display:grid; grid-template-columns:repeat(10,1fr); gap:3px; margin-top:6px; }
+.bk { border-radius:3px; padding:4px 0; text-align:center; border:1px solid; }
+.bk-e { background:var(--blue-lt);  border-color:var(--blue-bd); }
+.bk-c { background:var(--green-lt); border-color:var(--green-bd); }
+.bk-b { background:var(--gray-lt);  border-color:var(--gray-bd); border-style:dashed; }
+.bk-n { font-size:9px; font-weight:800; }
+.bk-e .bk-n { color:var(--blue); }
+.bk-c .bk-n { color:var(--green); }
+.bk-b .bk-n { color:var(--gray); }
+.bk-type { font-size:8.5px; color:#94a3b8; }
+
+/* ============================= 层间分隔 ============================= */
+.sep { display:flex; align-items:center; height:40px; gap:0; }
+.sep-gap { width:108px; flex-shrink:0; }
+.sep-body { flex:1; display:flex; align-items:center; justify-content:center; gap:24px; }
+.sep-arrow { display:flex; align-items:center; gap:5px; }
+.sa-icon { font-size:15px; color:#94a3b8; }
+.sa-pill { background:#fff; border:1px solid var(--gray-bd); border-radius:12px; padding:3px 11px; font-size:10.5px; font-weight:600; color:#475569; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+
+/* ============================= 图例 ============================= */
+.legend { display:flex; gap:18px; margin-top:22px; flex-wrap:wrap; }
+.lg-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#64748b; }
+.lg-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<!-- ===== 页头 ===== -->
+<div class="hd">
+  <svg viewBox="0 0 80 80" fill="none">
+    <defs><linearGradient id="G" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient></defs>
+    <path d="M14 65L14 37L40 14L66 37L66 65" stroke="url(#G)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M27 65L27 48L40 35L53 48L53 65" fill="url(#G)" opacity=".75"/>
+  </svg>
+  <div class="hd-info">
+    <h1>天渠 RTA 系统架构图</h1>
+    <p>按层级分层展示：外部接入 → 用户感知 → 功能服务 → 数据 → 模型</p>
+  </div>
+  <div class="hd-pills">
+    <span class="pill pill-blue">v2.0 · 单跳直连</span>
+    <span class="pill pill-green">在线出价 &lt; 50ms</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== 在线出价链路 ===== -->
+  <div class="flow-bar">
+    <div class="flow-bar-title">▶ 在线出价完整请求链路</div>
+    <div class="flow-steps">
+      <div class="fs"><div class="fs-box fs-gray">媒体广告请求</div><div class="fs-sub">deviceid + RTAID</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-blue">ID Mapping</div><div class="fs-sub">deviceid → userid</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-blue">Tair 标签查询</div><div class="fs-sub">pLTV / preB / cvr</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-blue">RTAID 路由</div><div class="fs-sub">匹配实验配置</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-blue">流量分桶</div><div class="fs-sub">1% 空白 / 99% 实验</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-green">实验分流</div><div class="fs-sub">hash(userid) % 10</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-green">实验组分配</div><div class="fs-sub">实验组 / 对照组</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-purple">条件标签匹配</div><div class="fs-sub">pLTV + preB 分层</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-purple">出价计算</div><div class="fs-sub">系数 / CPA / 混合</div></div>
+      <div class="fa">→</div>
+      <div class="fs"><div class="fs-box fs-gray">返回 ADX</div><div class="fs-sub">实时竞价决策</div></div>
+    </div>
+  </div>
+
+  <!-- ============================= LAYER 0：外部接入层 ============================= -->
+  <div class="layer-wrap">
+    <div class="layer-label">
+      <div class="ll-name" style="background:var(--gray);">外部接入层</div>
+      <div class="ll-sub">媒体 &amp; ADX<br>外部系统</div>
+    </div>
+    <div class="layer-panel lp-gray">
+      <div class="layer-panel-title">
+        <div class="lpt-dot" style="background:var(--gray);"></div>媒体平台接入 &amp; ADX 竞价
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-hd ch-gray"><span class="c-icon">📡</span><span class="c-title">接入媒体平台</span></div>
+          <div class="card-bd cb-white">
+            <div>请求内容：<b>deviceid</b>（IDFA/OAID）+ <b>RTAID</b> + 广告主账号</div>
+            <div class="tags">
+              <span class="t t-blue">Tanx（阿里汇川）</span>
+              <span class="t t-amber">巨量引擎（字节）</span>
+              <span class="t t-green">腾讯广告</span>
+              <span class="t t-purple">OPPO 广告</span>
+              <span class="t t-gray">VIVO 广告</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-gray"><span class="c-icon">🏆</span><span class="c-title">ADX 实时竞价</span></div>
+          <div class="card-bd cb-white">
+            <div>接收天渠 RTA 出价结果，完成最终竞价决策</div>
+            <div class="tags">
+              <span class="t t-gray">出价系数（系数出价）</span>
+              <span class="t t-gray">CPA 目标值</span>
+              <span class="t t-gray">日志回传</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sep">
+    <div class="sep-gap"></div>
+    <div class="sep-body">
+      <div class="sep-arrow"><span class="sa-icon">↕</span><span class="sa-pill">RTA 请求 / 出价结果</span></div>
+      <div class="sep-arrow"><span class="sa-icon">↕</span><span class="sa-pill">ADX 曝光 / 转化日志回传</span></div>
+    </div>
+  </div>
+
+  <!-- ============================= LAYER 1：用户感知层 ============================= -->
+  <div class="layer-wrap">
+    <div class="layer-label">
+      <div class="ll-name" style="background:var(--blue);">用户感知层</div>
+      <div class="ll-sub">天渠管理平台<br>配置 &amp; 决策</div>
+    </div>
+    <div class="layer-panel lp-blue">
+      <div class="layer-panel-title">
+        <div class="lpt-dot" style="background:var(--blue);"></div>天渠 RTA 管理平台（内部运营使用）
+      </div>
+      <div class="grid-4">
+
+        <!-- RTAID管理 -->
+        <div class="card">
+          <div class="card-hd ch-blue"><span class="c-icon">📋</span><span class="c-title">RTAID 管理</span></div>
+          <div class="card-bd cb-blue">
+            <div>渠道媒体与 RTAID 配置管理</div>
+            <div class="tags">
+              <span class="t t-blue">渠道</span><span class="t t-blue">RTAID</span>
+              <span class="t t-blue">广告主账号</span><span class="t t-blue">RTAID 名称</span>
+              <span class="t t-blue">关联实验</span><span class="t t-blue">创建人</span>
+            </div>
+            <div style="margin-top:7px;font-size:10.5px;color:var(--blue);font-weight:700;">✦ 新增 / 编辑 / 下线</div>
+          </div>
+        </div>
+
+        <!-- 实验管理 -->
+        <div class="card">
+          <div class="card-hd ch-blue"><span class="c-icon">🧪</span><span class="c-title">RTA 实验管理</span></div>
+          <div class="card-bd cb-blue">
+            <div>实验分组与流量分配配置</div>
+            <div class="alloc-row">
+              <div class="alloc-box ab-exp1"><div class="ab-name">实验组 1</div><div class="ab-pct">45%</div></div>
+              <div class="alloc-box ab-exp2"><div class="ab-name">实验组 2</div><div class="ab-pct">45%</div></div>
+              <div class="alloc-box ab-ctrl"><div class="ab-name">对照组</div><div class="ab-pct">9%</div></div>
+              <div class="alloc-box ab-blank"><div class="ab-name">空白组</div><div class="ab-pct">1%</div></div>
+            </div>
+            <div class="alloc-hint">实验组 + 对照组 + 空白组 = 100%</div>
+            <div style="margin-top:5px;font-size:10.5px;color:var(--blue);font-weight:700;">✦ 编辑 / 报告 / 推全 / 下线</div>
+          </div>
+        </div>
+
+        <!-- 策略管理 -->
+        <div class="card">
+          <div class="card-hd ch-blue"><span class="c-icon">⚙️</span><span class="c-title">RTA 策略管理</span></div>
+          <div class="card-bd cb-blue">
+            <div>出价策略配置（10桶分层明细）</div>
+            <div class="tags">
+              <span class="t t-blue">策略名称</span><span class="t t-blue">出价模式</span>
+              <span class="t t-blue">人群标签</span><span class="t t-blue">模型版本</span>
+            </div>
+            <div class="tags" style="margin-top:4px;">
+              <span class="t t-purple">pLTV 出价</span>
+              <span class="t t-purple">B浓度出价</span>
+              <span class="t t-purple">cvr 出价</span>
+            </div>
+            <div style="margin-top:5px;font-size:10.5px;color:var(--blue);font-weight:700;">✦ 新增 / 编辑 / 下线 ｜ 展开10桶</div>
+          </div>
+        </div>
+
+        <!-- 实验报告 -->
+        <div class="card">
+          <div class="card-hd ch-blue"><span class="c-icon">📊</span><span class="c-title">实验报告 &amp; 推全</span></div>
+          <div class="card-bd cb-blue">
+            <div>核心实验指标分析与推全决策</div>
+            <div class="tags">
+              <span class="t t-amber">护栏：ROI_0</span>
+              <span class="t t-green">北极星：LTV_0</span>
+              <span class="t t-blue">B用户浓度</span>
+              <span class="t t-blue">CAC</span>
+              <span class="t t-blue">买家转化率</span>
+            </div>
+            <div style="margin-top:7px;font-size:10.5px;font-weight:700;">
+              <span style="color:#059669;">▶ 推全</span>　
+              <span style="color:#0891b2;">▶ 继续观察</span>　
+              <span style="color:#dc2626;">▶ 下线</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="sep">
+    <div class="sep-gap"></div>
+    <div class="sep-body">
+      <div class="sep-arrow"><span class="sa-icon">↓</span><span class="sa-pill">配置下发（秒级生效）</span></div>
+      <div class="sep-arrow"><span class="sa-icon">↑</span><span class="sa-pill">实验指标 / 报告数据回流</span></div>
+    </div>
+  </div>
+
+  <!-- ============================= LAYER 2：功能服务层 ============================= -->
+  <div class="layer-wrap">
+    <div class="layer-label">
+      <div class="ll-name" style="background:var(--green);">功能服务层</div>
+      <div class="ll-sub">RTA 核心引擎<br>配置 &amp; 分析</div>
+    </div>
+    <div class="layer-panel lp-green">
+      <div class="layer-panel-title">
+        <div class="lpt-dot" style="background:var(--green);"></div>RTA 核心引擎 &amp; 支撑服务
+      </div>
+
+      <!-- 在线链路 5列 -->
+      <div class="row-label">
+        <span>在线出价核心链路</span><div class="rl-line"></div>
+      </div>
+      <div class="grid-5">
+        <div class="card">
+          <div class="card-hd ch-teal"><span class="c-icon">🔀</span><span class="c-title">RTA 接入服务</span></div>
+          <div class="card-bd cb-teal">
+            <div>请求接收 &amp; 负载均衡</div>
+            <div class="tags">
+              <span class="t t-indigo">RTAID 校验</span>
+              <span class="t t-indigo">请求解析</span>
+              <span class="t t-indigo">路由分发</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-green"><span class="c-icon">🪪</span><span class="c-title">ID Mapping 服务</span></div>
+          <div class="card-bd cb-green">
+            <div>deviceid → userid</div>
+            <div class="tags">
+              <span class="t t-green">IDFA</span><span class="t t-green">OAID</span>
+              <span class="t t-green">userid</span>
+            </div>
+            <div style="margin-top:4px;">匿名用户走备用路径</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-green"><span class="c-icon">🏷️</span><span class="c-title">Tair 标签查询</span></div>
+          <div class="card-bd cb-green">
+            <div>毫秒级用户特征查询</div>
+            <div class="tags">
+              <span class="t t-green">pLTV</span><span class="t t-green">preB</span>
+              <span class="t t-green">cvr</span><span class="t t-green">BA分层</span>
+            </div>
+            <div style="margin-top:4px;">替代奥格 400+ 人群包</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-green"><span class="c-icon">🧩</span><span class="c-title">实验分流引擎</span></div>
+          <div class="card-bd cb-green">
+            <div>流量层 + 实验层双层分桶</div>
+            <div class="tags">
+              <span class="t t-green">1% 空白贯穿</span>
+              <span class="t t-green">99% 进实验层</span>
+              <span class="t t-green">hash % 10</span>
+            </div>
+            <div class="buckets" style="margin-top:6px;">
+              <div class="bk bk-e"><div class="bk-n">1</div></div>
+              <div class="bk bk-e"><div class="bk-n">2</div></div>
+              <div class="bk bk-e"><div class="bk-n">3</div></div>
+              <div class="bk bk-e"><div class="bk-n">4</div></div>
+              <div class="bk bk-e"><div class="bk-n">5</div></div>
+              <div class="bk bk-c"><div class="bk-n">6</div></div>
+              <div class="bk bk-c"><div class="bk-n">7</div></div>
+              <div class="bk bk-c"><div class="bk-n">8</div></div>
+              <div class="bk bk-c"><div class="bk-n">9</div></div>
+              <div class="bk bk-b"><div class="bk-n">10</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-green"><span class="c-icon">💰</span><span class="c-title">出价策略引擎</span></div>
+          <div class="card-bd cb-green">
+            <div>条件标签自上而下匹配</div>
+            <div class="tags">
+              <span class="t t-green">系数出价</span>
+              <span class="t t-green">CPA 出价</span>
+              <span class="t t-green">混合出价</span>
+            </div>
+            <div style="margin-top:4px;">兜底策略 &amp; 不参竞判断</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 支撑服务 4列 -->
+      <div class="row-label">
+        <span>配置管理 &amp; 数据分析支撑</span><div class="rl-line"></div>
+      </div>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-hd ch-teal"><span class="c-icon">⚙️</span><span class="c-title">配置中心</span></div>
+          <div class="card-bd cb-teal">
+            <div>实验 / 策略配置实时下发</div>
+            <div class="tags">
+              <span class="t t-indigo">RTAID 配置</span>
+              <span class="t t-indigo">版本控制</span>
+              <span class="t t-indigo">秒级生效</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-teal"><span class="c-icon">📈</span><span class="c-title">实验分析服务</span></div>
+          <div class="card-bd cb-teal">
+            <div>A/B 指标聚合计算</div>
+            <div class="tags">
+              <span class="t t-indigo">ROI_0 护栏</span>
+              <span class="t t-indigo">LTV_0 北极星</span>
+              <span class="t t-indigo">B浓度</span>
+              <span class="t t-indigo">CAC</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-teal"><span class="c-icon">🚦</span><span class="c-title">流量调度服务</span></div>
+          <div class="card-bd cb-teal">
+            <div>分桶均匀性校验 &amp; 灰度</div>
+            <div class="tags">
+              <span class="t t-indigo">pLTV 分布一致性</span>
+              <span class="t t-indigo">推全切流</span>
+              <span class="t t-indigo">回滚</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-teal"><span class="c-icon">📝</span><span class="c-title">日志采集服务</span></div>
+          <div class="card-bd cb-teal">
+            <div>全量 RTA 出价日志</div>
+            <div class="tags">
+              <span class="t t-indigo">曝光 / 点击</span>
+              <span class="t t-indigo">转化归因</span>
+              <span class="t t-indigo">数仓同步</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="sep">
+    <div class="sep-gap"></div>
+    <div class="sep-body">
+      <div class="sep-arrow"><span class="sa-icon">↓</span><span class="sa-pill">读取标签 / 配置 / 映射关系</span></div>
+      <div class="sep-arrow"><span class="sa-icon">↑</span><span class="sa-pill">写入出价日志 / 实验数据</span></div>
+    </div>
+  </div>
+
+  <!-- ============================= LAYER 3：数据层 ============================= -->
+  <div class="layer-wrap">
+    <div class="layer-label">
+      <div class="ll-name" style="background:var(--purple);">数据层</div>
+      <div class="ll-sub">实时存储<br>离线数仓</div>
+    </div>
+    <div class="layer-panel lp-purple">
+      <div class="layer-panel-title">
+        <div class="lpt-dot" style="background:var(--purple);"></div>实时存储 &amp; 离线数据
+      </div>
+      <div class="grid-5">
+        <div class="card">
+          <div class="card-hd ch-purple"><span class="c-icon">⚡</span><span class="c-title">Tair 实时标签库</span></div>
+          <div class="card-bd cb-purple">
+            <div><b>读延迟 &lt; 1ms</b></div>
+            <div class="tags">
+              <span class="t t-purple">pLTV</span>
+              <span class="t t-purple">preB（B浓度）</span>
+              <span class="t t-purple">cvr</span>
+              <span class="t t-purple">BA 分层</span>
+            </div>
+            <div style="margin-top:4px;">每日模型批跑刷新</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-purple"><span class="c-icon">🔗</span><span class="c-title">ID 映射存储</span></div>
+          <div class="card-bd cb-purple">
+            <div>deviceid ↔ userid 关联图</div>
+            <div class="tags">
+              <span class="t t-purple">IDFA</span>
+              <span class="t t-purple">OAID</span>
+              <span class="t t-purple">userid</span>
+            </div>
+            <div style="margin-top:4px;">跨媒体统一分流锚点</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-indigo"><span class="c-icon">📦</span><span class="c-title">配置数据库</span></div>
+          <div class="card-bd cb-indigo">
+            <div>实验 &amp; 策略持久化配置</div>
+            <div class="tags">
+              <span class="t t-indigo">RTAID 配置</span>
+              <span class="t t-indigo">实验版本</span>
+              <span class="t t-indigo">出价策略</span>
+              <span class="t t-indigo">变更审计</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-indigo"><span class="c-icon">📊</span><span class="c-title">实验日志存储</span></div>
+          <div class="card-bd cb-indigo">
+            <div>全量在线出价日志（实时写入）</div>
+            <div class="tags">
+              <span class="t t-indigo">实验组标记</span>
+              <span class="t t-indigo">用户归因</span>
+              <span class="t t-indigo">T+1 同步数仓</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-purple"><span class="c-icon">📁</span><span class="c-title">离线报告数据</span></div>
+          <div class="card-bd cb-purple">
+            <div>A/B 实验指标聚合结果</div>
+            <div class="tags">
+              <span class="t t-purple">ROI_0</span>
+              <span class="t t-purple">LTV_0</span>
+              <span class="t t-purple">CAC</span>
+              <span class="t t-purple">B浓度</span>
+              <span class="t t-purple">买家转化率</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sep">
+    <div class="sep-gap"></div>
+    <div class="sep-body">
+      <div class="sep-arrow"><span class="sa-icon">↑</span><span class="sa-pill">特征批量输出（写入 Tair）</span></div>
+      <div class="sep-arrow"><span class="sa-icon">↑</span><span class="sa-pill">映射关系更新</span></div>
+    </div>
+  </div>
+
+  <!-- ============================= LAYER 4：模型层 ============================= -->
+  <div class="layer-wrap">
+    <div class="layer-label">
+      <div class="ll-name" style="background:var(--amber);">模型 &amp; 算法层</div>
+      <div class="ll-sub">离线预测<br>特征工程</div>
+    </div>
+    <div class="layer-panel lp-amber">
+      <div class="layer-panel-title">
+        <div class="lpt-dot" style="background:var(--amber);"></div>预测模型 &amp; 基础算法
+      </div>
+      <div class="grid-5">
+        <div class="card">
+          <div class="card-hd ch-amber"><span class="c-icon">📈</span><span class="c-title">pLTV 预测模型</span></div>
+          <div class="card-bd cb-amber">
+            <div>用户生命周期价值预测</div>
+            <div class="tags">
+              <span class="t t-amber">Tier 1~10 分层</span>
+              <span class="t t-amber">北极星指标</span>
+            </div>
+            <div style="margin-top:4px;">每日批跑 → 刷新 Tair</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-amber"><span class="c-icon">🎯</span><span class="c-title">cvr 转化率模型</span></div>
+          <div class="card-bd cb-amber">
+            <div>用户购买转化概率预测</div>
+            <div class="tags">
+              <span class="t t-amber">cvr 出价维度</span>
+              <span class="t t-amber">联合 pLTV</span>
+            </div>
+            <div style="margin-top:4px;">每日批跑 → 刷新 Tair</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-amber"><span class="c-icon">💧</span><span class="c-title">BA 分层模型</span></div>
+          <div class="card-bd cb-amber">
+            <div>B用户浓度（preB）预测</div>
+            <div class="tags">
+              <span class="t t-amber">潜在 B 用户识别</span>
+              <span class="t t-amber">ROI_0 护栏</span>
+            </div>
+            <div style="margin-top:4px;">B浓度出价维度支撑</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-amber"><span class="c-icon">🔗</span><span class="c-title">ID Mapping 算法</span></div>
+          <div class="card-bd cb-amber">
+            <div>多媒体 deviceid 关联图</div>
+            <div class="tags">
+              <span class="t t-amber">匹配率 70%+</span>
+              <span class="t t-amber">超越巨浪 60%</span>
+            </div>
+            <div style="margin-top:4px;">跨平台实验一致性保障</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd ch-amber"><span class="c-icon">🪣</span><span class="c-title">分桶均匀性算法</span></div>
+          <div class="card-bd cb-amber">
+            <div>MurmurHash3 哈希分桶</div>
+            <div class="tags">
+              <span class="t t-amber">初始浓度一致性</span>
+              <span class="t t-amber">10桶约束</span>
+            </div>
+            <div style="margin-top:4px;">保障实验纯净性</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 图例 ===== -->
+  <div class="legend">
+    <div class="lg-item"><div class="lg-dot" style="background:var(--gray);"></div>外部接入层：媒体 &amp; ADX</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--blue);"></div>用户感知层：天渠管理平台</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--green);"></div>功能服务层：RTA 核心引擎</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--purple);"></div>数据层：实时存储 &amp; 离线数仓</div>
+    <div class="lg-item"><div class="lg-dot" style="background:var(--amber);"></div>模型层：预测模型 &amp; 算法</div>
+  </div>
+
+</div>
+</body>
+</html>

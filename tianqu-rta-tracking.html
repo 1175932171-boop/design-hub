@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天渠 RTA 管理平台 · 埋点方案</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: #f5f7fa; color: #333; font-size: 14px; line-height: 1.7; }
+
+.header {
+  position: fixed; top: 0; left: 0; right: 0; height: 60px;
+  background: #1a2332; z-index: 200;
+  display: flex; align-items: center; padding: 0 32px; gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.header-logo { font-size: 18px; font-weight: 700; color: #fff; }
+.header-badge { padding: 2px 10px; background: rgba(82,196,26,.25); color: #95de64; border: 1px solid rgba(82,196,26,.4); border-radius: 12px; font-size: 11.5px; font-weight: 600; }
+.header-meta { margin-left: auto; font-size: 12px; color: #8899aa; }
+
+.sidebar {
+  position: fixed; top: 60px; left: 0; bottom: 0; width: 230px;
+  background: #fff; border-right: 1px solid #e8ecf0;
+  overflow-y: auto; padding: 16px 0;
+}
+.nav-section { padding: 0 12px; margin-bottom: 4px; }
+.nav-section-title { font-size: 11px; font-weight: 700; color: #aaa; letter-spacing: 1px; text-transform: uppercase; padding: 10px 8px 4px; }
+.nav-item { display: block; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: #555; cursor: pointer; text-decoration: none; transition: all .15s; margin-bottom: 1px; }
+.nav-item:hover { background: #f0f5ff; color: #1677ff; }
+.nav-item.active { background: #e6f4ff; color: #1677ff; font-weight: 600; }
+.nav-item.sub { padding-left: 22px; font-size: 12.5px; color: #777; }
+
+.main { margin-top: 60px; margin-left: 230px; padding: 32px 40px; }
+
+.section { margin-bottom: 48px; }
+.section-anchor { display: block; height: 1px; margin-top: -80px; padding-top: 80px; }
+
+h1.page-title { font-size: 26px; font-weight: 800; color: #111; margin-bottom: 6px; }
+.page-subtitle { font-size: 14px; color: #888; margin-bottom: 32px; padding-bottom: 18px; border-bottom: 2px solid #e8ecf0; }
+.page-subtitle span { color: #1677ff; font-weight: 600; }
+
+h2.sec-title {
+  font-size: 19px; font-weight: 700; color: #1a2332;
+  margin-bottom: 16px; padding-bottom: 10px;
+  border-bottom: 3px solid #52c41a;
+  display: flex; align-items: center; gap: 10px;
+}
+h2.sec-title .sec-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #52c41a; color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+h3.sub-title { font-size: 15px; font-weight: 700; color: #333; margin: 20px 0 10px; padding-left: 10px; border-left: 4px solid #52c41a; }
+
+/* 表格 */
+.doc-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+.doc-table th { background: #f0f7ee; padding: 10px 14px; text-align: left; font-weight: 600; color: #2d5016; border-bottom: 2px solid #d3efb8; white-space: nowrap; }
+.doc-table td { padding: 9px 14px; border-bottom: 1px solid #f0f2f5; vertical-align: top; color: #444; }
+.doc-table tbody tr:hover td { background: #f6ffe8; }
+.doc-table .code { font-family: monospace; font-size: 12px; background: #f0f3f8; padding: 2px 6px; border-radius: 3px; color: #c7254e; white-space: nowrap; }
+.doc-table .green { color: #389e0d; font-weight: 600; }
+.doc-table .blue  { color: #096dd9; font-weight: 600; }
+.doc-table .orange{ color: #d46b08; font-weight: 600; }
+.doc-table .purple{ color: #722ed1; font-weight: 600; }
+.doc-table .red   { color: #cf1322; font-weight: 600; }
+
+/* 事件类型标签 */
+.ev { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.ev-pv  { background: #e6f4ff; color: #096dd9; border: 1px solid #91caff; }
+.ev-clk { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+.ev-submit { background: #fff7e6; color: #d46b08; border: 1px solid #ffd591; }
+.ev-exp { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 8px; border: 1px solid #e8ecf0; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+
+/* 提示框 */
+.tip { padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
+.tip-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.tip.tip-info { background: #e6f4ff; border: 1px solid #91caff; color: #096dd9; }
+.tip.tip-warn { background: #fffbe6; border: 1px solid #ffe58f; color: #7c4a00; }
+.tip.tip-success { background: #f6ffed; border: 1px solid #b7eb8f; color: #237804; }
+
+/* 埋点ID chip */
+.eid { display: inline-block; font-family: monospace; font-size: 11.5px; background: #1a2332; color: #95de64; padding: 2px 8px; border-radius: 4px; letter-spacing: .3px; }
+
+/* 模块标题色彩 */
+.mod-rtaid  h2.sec-title { border-bottom-color: #1677ff; }
+.mod-rtaid  h2.sec-title .sec-num { background: #1677ff; }
+.mod-exp    h2.sec-title { border-bottom-color: #fa541c; }
+.mod-exp    h2.sec-title .sec-num { background: #fa541c; }
+.mod-strat  h2.sec-title { border-bottom-color: #722ed1; }
+.mod-strat  h2.sec-title .sec-num { background: #722ed1; }
+.mod-global h2.sec-title { border-bottom-color: #13c2c2; }
+.mod-global h2.sec-title .sec-num { background: #13c2c2; }
+
+/* 总览统计 */
+.stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-card { flex: 1; min-width: 140px; background: #fff; border-radius: 8px; border: 1px solid #e8ecf0; padding: 16px 20px; text-align: center; }
+.stat-num  { font-size: 28px; font-weight: 800; color: #1677ff; }
+.stat-label{ font-size: 12px; color: #888; margin-top: 4px; }
+
+.back-top { position: fixed; bottom: 32px; right: 32px; width: 40px; height: 40px; border-radius: 50%; background: #52c41a; color: #fff; border: none; font-size: 18px; cursor: pointer; box-shadow: 0 4px 12px rgba(82,196,26,.4); display: flex; align-items: center; justify-content: center; }
+
+/* 变更记录 */
+.changelog-item { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+.cl-date { font-size: 12px; color: #aaa; white-space: nowrap; min-width: 90px; padding-top: 2px; }
+.cl-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; margin-top: 1px; }
+.cl-feat { background: #e6f4ff; color: #096dd9; border: 1px solid #91caff; }
+.cl-text { font-size: 13px; color: #444; }
+
+p { margin-bottom: 10px; color: #444; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">天渠 RTA 管理平台</div>
+  <div class="header-badge">埋点方案 v1.0</div>
+  <div class="header-meta">基于 Demo + PRD v2.0 &nbsp;·&nbsp; 2026-07-02</div>
+</div>
+
+<nav class="sidebar">
+  <div class="nav-section">
+    <div class="nav-section-title">概览</div>
+    <a class="nav-item" href="#overview">文档说明</a>
+    <a class="nav-item" href="#naming">命名规范</a>
+    <a class="nav-item" href="#global">全局公参</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">页面 PV</div>
+    <a class="nav-item" href="#pv">PV 事件汇总</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">模块埋点</div>
+    <a class="nav-item" href="#rtaid">1. RTAID 管理</a>
+    <a class="nav-item sub" href="#rtaid-list">列表操作</a>
+    <a class="nav-item sub" href="#rtaid-modal">新增/编辑弹窗</a>
+    <a class="nav-item" href="#exp">2. RTA 实验管理</a>
+    <a class="nav-item sub" href="#exp-search">搜索筛选</a>
+    <a class="nav-item sub" href="#exp-ops">实验操作</a>
+    <a class="nav-item sub" href="#exp-report">实验报告</a>
+    <a class="nav-item sub" href="#exp-promote">扩桶申请</a>
+    <a class="nav-item sub" href="#exp-auto">推全操作</a>
+    <a class="nav-item sub" href="#exp-modal">新建/编辑</a>
+    <a class="nav-item" href="#strat">3. RTA 策略管理</a>
+    <a class="nav-item sub" href="#strat-list">列表操作</a>
+    <a class="nav-item sub" href="#strat-online">上线校验</a>
+    <a class="nav-item sub" href="#strat-log">版本日志</a>
+    <a class="nav-item sub" href="#strat-modal">新建/编辑/复制</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">附录</div>
+    <a class="nav-item" href="#fields">字段枚举值</a>
+    <a class="nav-item" href="#changelog">变更记录</a>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ====== 文档说明 ====== -->
+<span class="section-anchor" id="overview"></span>
+<h1 class="page-title">天渠 RTA 管理平台 · 埋点方案</h1>
+<p class="page-subtitle">
+  版本 <span>v1.0</span> &nbsp;|&nbsp; 日期 <span>2026-07-02</span> &nbsp;|&nbsp;
+  覆盖模块 <span>RTAID管理 / RTA实验管理 / RTA策略管理</span> &nbsp;|&nbsp; 状态 <span>初版</span>
+</p>
+
+<div class="section">
+  <h2 class="sec-title mod-global"><span class="sec-num">0</span>文档说明</h2>
+  <div class="card">
+    <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>本文档基于 <strong>天渠 RTA 管理平台 Demo（tianqu-rta-demo.html）</strong> 及 <strong>PRD v2.0</strong> 梳理，覆盖三大模块的全部用户行为事件，包括页面曝光（PV）、点击、弹窗操作、提交、跳转等。</div></div>
+    <p>埋点采用 <strong>SPM 三段式</strong> 命名规范，所有事件上报时携带全局公共参数。数据用于：</p>
+    <ul style="margin-left:20px;color:#444;font-size:13.5px;line-height:2.2">
+      <li>核心功能使用率统计（实验创建/策略上线/推全等）</li>
+      <li>操作转化漏斗分析（弹窗打开→提交完成）</li>
+      <li>异常行为监控（置灰按钮点击尝试、下线阻断频率）</li>
+      <li>用户行为热图（各功能点击分布）</li>
+    </ul>
+  </div>
+
+  <!-- 总览统计 -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" style="color:#096dd9">8</div><div class="stat-label">页面 PV 事件</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#389e0d">42</div><div class="stat-label">点击类事件</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#d46b08">18</div><div class="stat-label">提交/确认事件</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#722ed1">12</div><div class="stat-label">搜索/筛选事件</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#cf1322">6</div><div class="stat-label">下线/回退事件</div></div>
+    <div class="stat-card"><div class="stat-num">86</div><div class="stat-label">埋点事件总计</div></div>
+  </div>
+</div>
+
+<!-- ====== 命名规范 ====== -->
+<span class="section-anchor" id="naming"></span>
+<div class="section">
+  <h2 class="sec-title mod-global"><span class="sec-num">✦</span>命名规范</h2>
+  <div class="card">
+    <h3 class="sub-title">事件 ID 格式</h3>
+    <p>采用 <strong>SPM 三段式</strong>：<code style="background:#f0f3f8;padding:2px 8px;border-radius:4px;font-family:monospace">rta_{module}_{action}_{object}</code></p>
+    <table class="doc-table">
+      <thead><tr><th>段位</th><th>含义</th><th>枚举值</th></tr></thead>
+      <tbody>
+        <tr><td>rta</td><td>产品前缀（固定）</td><td><span class="code">rta</span></td></tr>
+        <tr><td>module</td><td>模块</td><td><span class="code">rtaid</span> / <span class="code">exp</span> / <span class="code">strat</span> / <span class="code">global</span></td></tr>
+        <tr><td>action</td><td>行为类型</td><td><span class="code">click</span> / <span class="code">view</span> / <span class="code">submit</span> / <span class="code">search</span> / <span class="code">confirm</span> / <span class="code">cancel</span></td></tr>
+        <tr><td>object</td><td>操作对象</td><td>具体操作名，如 <span class="code">add_btn</span> / <span class="code">edit_modal</span> / <span class="code">offline_confirm</span> 等</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-title">事件类型说明</h3>
+    <table class="doc-table">
+      <thead><tr><th>类型</th><th>说明</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ev ev-pv">PV</span></td><td>页面或弹窗曝光</td><td>模块切换至实验管理、弹窗打开</td></tr>
+        <tr><td><span class="ev ev-clk">CLICK</span></td><td>用户点击行为</td><td>点击编辑、点击版本标签、点击策略名称</td></tr>
+        <tr><td><span class="ev ev-submit">SUBMIT</span></td><td>表单提交/确认类</td><td>确认上线、提交扩桶申请、保存策略</td></tr>
+        <tr><td><span class="ev ev-exp">EXPOSE</span></td><td>按钮/模块曝光（区分可用/置灰）</td><td>上线按钮置灰曝光、下线按钮置灰曝光</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ====== 全局公参 ====== -->
+<span class="section-anchor" id="global"></span>
+<div class="section">
+  <h2 class="sec-title mod-global"><span class="sec-num">✦</span>全局公共参数</h2>
+  <div class="card">
+    <div class="tip tip-warn"><span class="tip-icon">⚠️</span><div>以下参数在<strong>所有事件</strong>中必须上报，不得遗漏。</div></div>
+    <table class="doc-table">
+      <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th><th>示例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">event_id</span></td><td>string</td><td class="red">必填</td><td>事件唯一 ID，SPM三段式</td><td>rta_exp_click_edit_btn</td></tr>
+        <tr><td><span class="code">event_type</span></td><td>string</td><td class="red">必填</td><td>事件类型</td><td>CLICK / PV / SUBMIT / EXPOSE</td></tr>
+        <tr><td><span class="code">timestamp</span></td><td>number</td><td class="red">必填</td><td>事件发生时间戳（毫秒）</td><td>1751462400000</td></tr>
+        <tr><td><span class="code">page_url</span></td><td>string</td><td class="red">必填</td><td>当前页面 URL</td><td>https://rta.xxx.com/</td></tr>
+        <tr><td><span class="code">cur_module</span></td><td>string</td><td class="red">必填</td><td>当前激活 Tab 模块</td><td>rtaid / exp / strategy</td></tr>
+        <tr><td><span class="code">operator</span></td><td>string</td><td class="red">必填</td><td>操作人 ID（工号/英文名）</td><td>zhilei / fuling</td></tr>
+        <tr><td><span class="code">session_id</span></td><td>string</td><td class="red">必填</td><td>会话 ID</td><td>uuid-v4</td></tr>
+        <tr><td><span class="code">app_version</span></td><td>string</td><td class="orange">建议</td><td>前端版本号</td><td>v2.0.3</td></tr>
+        <tr><td><span class="code">browser</span></td><td>string</td><td class="orange">建议</td><td>浏览器UA摘要</td><td>Chrome/126 macOS</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ====== PV 汇总 ====== -->
+<span class="section-anchor" id="pv"></span>
+<div class="section">
+  <h2 class="sec-title mod-global"><span class="sec-num">✦</span>页面 / 弹窗 PV 事件汇总</h2>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th>事件 ID</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr><td><span class="eid">rta_global_view_page</span></td><td>平台首次加载完成</td><td>—</td></tr>
+        <tr><td><span class="eid">rta_rtaid_view_module</span></td><td>切换至 RTAID 管理 Tab</td><td>—</td></tr>
+        <tr><td><span class="eid">rta_exp_view_module</span></td><td>切换至 RTA 实验管理 Tab</td><td>—</td></tr>
+        <tr><td><span class="eid">rta_strat_view_module</span></td><td>切换至 RTA 策略管理 Tab</td><td>—</td></tr>
+        <tr><td><span class="eid">rta_rtaid_view_add_modal</span></td><td>打开新增 RTAID 弹窗</td><td><span class="code">modal_type: add</span></td></tr>
+        <tr><td><span class="eid">rta_rtaid_view_edit_modal</span></td><td>打开编辑 RTAID 弹窗</td><td><span class="code">rtaid, rtaid_name</span></td></tr>
+        <tr><td><span class="eid">rta_exp_view_add_modal</span></td><td>打开新建 RTA 实验弹窗</td><td>—</td></tr>
+        <tr><td><span class="eid">rta_exp_view_edit_modal</span></td><td>打开编辑 RTA 实验弹窗</td><td><span class="code">exp_name</span></td></tr>
+        <tr><td><span class="eid">rta_exp_view_report_modal</span></td><td>打开实验报告弹窗</td><td><span class="code">exp_name</span></td></tr>
+        <tr><td><span class="eid">rta_exp_view_promote_modal</span></td><td>打开扩桶申请弹窗</td><td><span class="code">exp_name</span></td></tr>
+        <tr><td><span class="eid">rta_exp_view_auto_promote_modal</span></td><td>打开推全弹窗</td><td><span class="code">exp_name</span></td></tr>
+        <tr><td><span class="eid">rta_exp_view_version_modal</span></td><td>打开实验版本历史弹窗</td><td><span class="code">exp_name, cur_version</span></td></tr>
+        <tr><td><span class="eid">rta_exp_view_detail_modal</span></td><td>打开实验配置详情弹窗</td><td><span class="code">exp_name</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_detail_modal</span></td><td>点击策略名称打开配置详情</td><td><span class="code">strat_name</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_add_modal</span></td><td>打开新建策略弹窗</td><td><span class="code">modal_type: add</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_edit_modal</span></td><td>打开编辑策略弹窗</td><td><span class="code">strat_id, strat_name</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_copy_modal</span></td><td>打开复制策略弹窗</td><td><span class="code">src_strat_id, src_strat_name</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_log_modal</span></td><td>打开策略版本日志弹窗</td><td><span class="code">strat_id, strat_name, cur_version</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_online_modal</span></td><td>打开策略上线校验弹窗</td><td><span class="code">strat_id, strat_name, strat_status</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_ver_detail_modal</span></td><td>查看历史版本配置详情弹窗</td><td><span class="code">strat_id, version</span></td></tr>
+        <tr><td><span class="eid">rta_strat_view_rollback_modal</span></td><td>打开策略回退确认弹窗</td><td><span class="code">strat_id, cur_version, target_version</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ====== RTAID 模块 ====== -->
+<span class="section-anchor" id="rtaid"></span>
+<div class="section mod-rtaid">
+  <h2 class="sec-title"><span class="sec-num">1</span>RTAID 管理模块</h2>
+
+  <span class="section-anchor" id="rtaid-list"></span>
+  <h3 class="sub-title">1.1 列表页操作</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_rtaid_click_add_btn</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"+ 新增RTAID"按钮</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_search</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击搜索按钮执行搜索</td>
+          <td><span class="code">task_type</span>（任务类型）<br><span class="code">rtaid_kw</span>（关键词）<br><span class="code">media_channel</span>（媒体渠道）<br><span class="code">name_kw</span>（名称关键词）<br><span class="code">result_count</span>（结果条数）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_reset_search</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击重置搜索条件</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_click_edit</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击某行"编辑"按钮</td>
+          <td><span class="code">rtaid</span>（数字ID）<br><span class="code">rtaid_name</span><br><span class="code">channel</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_click_offline</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击某行"下线"触发确认弹窗</td>
+          <td><span class="code">rtaid</span><br><span class="code">rtaid_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_confirm_offline</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认下线 RTAID</td>
+          <td><span class="code">rtaid</span><br><span class="code">rtaid_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_cancel_offline</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>取消下线操作</td>
+          <td><span class="code">rtaid</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="rtaid-modal"></span>
+  <h3 class="sub-title">1.2 新增 / 编辑弹窗</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_rtaid_change_channel</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>切换渠道下拉选项（影响媒体渠道联动）</td>
+          <td><span class="code">selected_channel</span>（Tanx/巨量引擎/腾讯/快手）<br><span class="code">is_tanx</span>（是否Tanx）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_submit_add</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认保存新增 RTAID</td>
+          <td><span class="code">rtaid</span><br><span class="code">rtaid_name</span><br><span class="code">channel</span><br><span class="code">task_type</span>（拉新/拉活）<br><span class="code">media_channel</span><br><span class="code">has_exp</span>（是否关联实验）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_submit_edit</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认保存编辑 RTAID</td>
+          <td>同上 + <span class="code">changed_fields</span>（变更字段列表）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_cancel_modal</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击取消/关闭弹窗</td>
+          <td><span class="code">modal_type</span>（add/edit）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_rtaid_click_zeus_link</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"+ 新增宙斯实验 ↗"外链跳转</td>
+          <td><span class="code">target_url</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ====== 实验管理模块 ====== -->
+<span class="section-anchor" id="exp"></span>
+<div class="section mod-exp">
+  <h2 class="sec-title"><span class="sec-num">2</span>RTA 实验管理模块</h2>
+
+  <span class="section-anchor" id="exp-search"></span>
+  <h3 class="sub-title">2.1 搜索筛选</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_exp_search</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击搜索按钮</td>
+          <td><span class="code">rtaid_kw</span><br><span class="code">media_channel</span><br><span class="code">exp_name_kw</span>（实验名称关键词）<br><span class="code">strategy_kw</span>（策略关键词）<br><span class="code">exp_status</span>（状态筛选）<br><span class="code">result_count</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_reset_search</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>重置搜索条件</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_page_turn</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>翻页操作</td>
+          <td><span class="code">direction</span>（prev/next）<br><span class="code">cur_page</span><br><span class="code">total_page</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="exp-ops"></span>
+  <h3 class="sub-title">2.2 实验列表操作</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_exp_click_add_btn</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"+ 新建 RTA 实验"</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_click_edit</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击实验"编辑"</td>
+          <td><span class="code">exp_name</span><br><span class="code">exp_status</span><br><span class="code">channel</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_click_version_tag</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击实验版本标签（如 v3▼）</td>
+          <td><span class="code">exp_name</span><br><span class="code">version</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_click_strategy_name</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击实验分组内策略名称（查看策略详情）</td>
+          <td><span class="code">exp_name</span><br><span class="code">strat_name</span><br><span class="code">group_type</span>（exp/ctrl/blank）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_click_offline</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"下线"触发确认</td>
+          <td><span class="code">exp_name</span><br><span class="code">exp_status</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_confirm_offline</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认下线实验</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="exp-report"></span>
+  <h3 class="sub-title">2.3 实验报告弹窗</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_exp_click_report</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"报告"按钮打开报告弹窗</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_report_click_bucket_detail</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>报告弹窗内点击"分桶数据"查看分桶详情</td>
+          <td><span class="code">exp_name</span><br><span class="code">group_label</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_report_click_promote</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>报告内点击"扩桶"决策按钮</td>
+          <td><span class="code">exp_name</span><br><span class="code">win_strategy</span>（推荐胜出策略）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_report_click_observe</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>报告内点击"继续观察"</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_report_click_offline</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>报告内点击"下线实验"</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="exp-promote"></span>
+  <h3 class="sub-title">2.4 扩桶申请弹窗</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_exp_click_promote</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"扩桶"按钮打开申请弹窗</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_promote_select_strategy</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>在扩桶弹窗内选择策略</td>
+          <td><span class="code">exp_name</span><br><span class="code">selected_strategy</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_promote_select_buckets</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>勾选目标分桶</td>
+          <td><span class="code">exp_name</span><br><span class="code">selected_buckets</span>（逗号分隔）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_promote_submit</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>提交扩桶申请</td>
+          <td><span class="code">exp_name</span><br><span class="code">strategy</span><br><span class="code">buckets</span><br><span class="code">pre_check_pass</span>（前置检查是否全通过）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_promote_cancel</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>取消扩桶申请</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="exp-auto"></span>
+  <h3 class="sub-title">2.5 推全弹窗（自动扩桶）</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_exp_click_auto_promote</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"推全"按钮打开弹窗</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_auto_promote_step2</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"下一步"进入分级扩桶计划</td>
+          <td><span class="code">exp_name</span><br><span class="code">recommended_strategy</span><br><span class="code">confidence</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_auto_promote_confirm_check</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>勾选"已确认执行扩桶操作"复选框</td>
+          <td><span class="code">exp_name</span><br><span class="code">checked</span>（true/false）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_auto_promote_submit</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认执行推全</td>
+          <td><span class="code">exp_name</span><br><span class="code">strategy</span><br><span class="code">target_buckets</span><br><span class="code">phase_count</span>（分几阶段）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_auto_promote_prev</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"上一步"返回第一步</td>
+          <td><span class="code">exp_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_auto_promote_cancel</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>关闭推全弹窗</td>
+          <td><span class="code">exp_name</span><br><span class="code">step</span>（关闭时在第几步）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="exp-modal"></span>
+  <h3 class="sub-title">2.6 新建 / 编辑实验弹窗</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:260px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_exp_add_strat_row</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"+ 添加策略"增加分组策略行</td>
+          <td><span class="code">group_type</span>（exp/ctrl/blank）<br><span class="code">row_count</span>（当前行数）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_select_bucket</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>勾选/取消某分桶</td>
+          <td><span class="code">group_type</span><br><span class="code">bucket_no</span><br><span class="code">action</span>（select/deselect）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_submit_add</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>提交新建实验</td>
+          <td><span class="code">exp_name</span><br><span class="code">rtaid</span><br><span class="code">channel</span><br><span class="code">exp_group_count</span><br><span class="code">total_buckets</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_submit_edit</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>提交编辑实验</td>
+          <td><span class="code">exp_name</span><br><span class="code">changed_fields</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_exp_click_one_click_create</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"⚡一键创建实验"按钮</td>
+          <td><span class="code">exp_name</span><br><span class="code">rtaid</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ====== 策略管理模块 ====== -->
+<span class="section-anchor" id="strat"></span>
+<div class="section mod-strat">
+  <h2 class="sec-title"><span class="sec-num">3</span>RTA 策略管理模块</h2>
+
+  <span class="section-anchor" id="strat-list"></span>
+  <h3 class="sub-title">3.1 策略列表操作</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:280px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_strat_click_add_btn</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"+ 新增 RTA 策略"</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_search</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>执行策略搜索</td>
+          <td><span class="code">rtaid_kw</span><br><span class="code">media_channel</span><br><span class="code">name_kw</span><br><span class="code">label_kw</span>（人群标签）<br><span class="code">result_count</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_name</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击策略名称（蓝色可点击链接）查看详情</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">strat_status</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_version_tag</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击策略版本标签（如 v3▼）打开日志</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">version</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_bound_exp</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击策略绑定实验名称（跳转至实验管理）</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">exp_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_edit</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"编辑"打开编辑弹窗</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">strat_status</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_copy</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"复制"打开复制策略弹窗</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_online_btn</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"上线"按钮（正常可点状态）</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">strat_status</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_expose_online_disabled</span></td>
+          <td><span class="ev ev-exp">EXPOSE</span></td>
+          <td>上线按钮处于置灰状态时被用户悬停（尝试点击）</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_status</span>（新建/人群圈选中）<br><span class="code">disable_reason</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_log</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"日志"打开版本日志弹窗</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">cur_version</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_click_offline</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"下线"按钮（正常可点状态）</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_expose_offline_disabled</span></td>
+          <td><span class="ev ev-exp">EXPOSE</span></td>
+          <td>下线按钮处于置灰状态（策略有绑定实验）时用户悬停</td>
+          <td><span class="code">strat_id</span><br><span class="code">bound_exp_count</span>（绑定实验数）<br><span class="code">disable_reason</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_confirm_offline</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认下线策略</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="strat-online"></span>
+  <h3 class="sub-title">3.2 策略上线校验弹窗</h3>
+  <div class="card">
+    <div class="tip tip-info"><span class="tip-icon">ℹ️</span><div>该弹窗是策略正式上线前的关键确认节点，需重点关注确认成功率与各校验项失败率。</div></div>
+    <table class="doc-table">
+      <thead><tr><th style="width:280px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_strat_online_view_checks</span></td>
+          <td><span class="ev ev-pv">PV</span></td>
+          <td>上线校验弹窗展示（校验项渲染完成）</td>
+          <td><span class="code">strat_id</span><br><span class="code">all_pass</span>（所有校验是否通过）<br><span class="code">failed_checks</span>（失败校验项列表）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_online_confirm</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>点击"确认上线"完成上线</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">all_pass</span><br><span class="code">check_duration_ms</span>（校验耗时）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_online_cancel</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>取消上线（关闭弹窗）</td>
+          <td><span class="code">strat_id</span><br><span class="code">all_pass</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="strat-log"></span>
+  <h3 class="sub-title">3.3 策略版本日志弹窗</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:280px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_strat_log_view_ver_detail</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击历史版本的"查看配置"</td>
+          <td><span class="code">strat_id</span><br><span class="code">cur_version</span><br><span class="code">target_version</span>（查看的历史版本号）<br><span class="code">ver_type</span>（初始创建/出价修改/分层调整）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_log_click_rollback</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"⏪ 回退至此版本"按钮</td>
+          <td><span class="code">strat_id</span><br><span class="code">cur_version</span><br><span class="code">target_version</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_rollback_confirm</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>在回退确认弹窗点击"确认回退"</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">from_version</span><br><span class="code">to_version</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_rollback_cancel</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>取消版本回退</td>
+          <td><span class="code">strat_id</span><br><span class="code">from_version</span><br><span class="code">to_version</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <span class="section-anchor" id="strat-modal"></span>
+  <h3 class="sub-title">3.4 新建 / 编辑 / 复制策略弹窗</h3>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:280px">事件 ID</th><th>类型</th><th>触发时机</th><th>附加参数</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="eid">rta_strat_modal_switch_bid_mode</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>切换出价模式（系数/CPA/CPC/ROI）</td>
+          <td><span class="code">modal_type</span>（add/edit/copy）<br><span class="code">bid_mode</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_modal_switch_bc_tab</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>切换 B/C 用户策略 Tab</td>
+          <td><span class="code">tab</span>（B/C）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_modal_add_rule</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"+ 添加规则"新增人群规则块</td>
+          <td><span class="code">bc_type</span>（B/C/统一）<br><span class="code">rule_count</span>（添加后规则总数）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_modal_add_cond</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"+ 添加条件"新增标签条件</td>
+          <td><span class="code">rule_idx</span>（规则序号）<br><span class="code">bc_type</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_modal_select_label</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>选择人群标签类型</td>
+          <td><span class="code">label_type</span>（pLTV/B浓度/版位/活跃度/ROI阈值）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_modal_switch_logic</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>切换条件逻辑连接符（AND/OR）</td>
+          <td><span class="code">logic</span>（AND/OR）<br><span class="code">rule_idx</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_modal_copy_rule</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>点击"复制规则"</td>
+          <td><span class="code">rule_idx</span><br><span class="code">bc_type</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_submit_add</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认保存新建策略</td>
+          <td><span class="code">strat_name</span><br><span class="code">channel</span><br><span class="code">rtaid</span><br><span class="code">bid_mode</span><br><span class="code">bc_split</span>（是否BC区分）<br><span class="code">rule_count</span>（规则数）<br><span class="code">total_cond_count</span>（条件总数）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_submit_edit</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>确认保存编辑策略</td>
+          <td><span class="code">strat_id</span><br><span class="code">strat_name</span><br><span class="code">changed_fields</span></td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_submit_copy</span></td>
+          <td><span class="ev ev-submit">SUBMIT</span></td>
+          <td>从复制弹窗保存新策略</td>
+          <td><span class="code">src_strat_id</span><br><span class="code">src_strat_name</span><br><span class="code">new_strat_name</span><br><span class="code">changed_fields</span>（与原策略的差异）</td>
+        </tr>
+        <tr>
+          <td><span class="eid">rta_strat_modal_cancel</span></td>
+          <td><span class="ev ev-clk">CLICK</span></td>
+          <td>关闭/取消策略弹窗</td>
+          <td><span class="code">modal_type</span><br><span class="code">has_unsaved</span>（是否有未保存内容）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ====== 字段枚举值 ====== -->
+<span class="section-anchor" id="fields"></span>
+<div class="section">
+  <h2 class="sec-title mod-global"><span class="sec-num">✦</span>附录：字段枚举值</h2>
+  <div class="card">
+    <h3 class="sub-title">strat_status（策略状态）</h3>
+    <table class="doc-table">
+      <thead><tr><th>值</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">new</span></td><td>新建</td></tr>
+        <tr><td><span class="code">selecting</span></td><td>人群圈选中</td></tr>
+        <tr><td><span class="code">online</span></td><td>已上线</td></tr>
+        <tr><td><span class="code">offline</span></td><td>已下线</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-title">exp_status（实验状态）</h3>
+    <table class="doc-table">
+      <thead><tr><th>值</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">running</span></td><td>实验中</td></tr>
+        <tr><td><span class="code">pushed</span></td><td>已推全</td></tr>
+        <tr><td><span class="code">offline</span></td><td>已下线</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-title">channel（渠道）</h3>
+    <table class="doc-table">
+      <thead><tr><th>值</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">tanx</span></td><td>Tanx</td></tr>
+        <tr><td><span class="code">juliangEngine</span></td><td>巨量引擎</td></tr>
+        <tr><td><span class="code">tencent</span></td><td>腾讯</td></tr>
+        <tr><td><span class="code">kuaishou</span></td><td>快手</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-title">group_type（分组类型）</h3>
+    <table class="doc-table">
+      <thead><tr><th>值</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">exp</span></td><td>实验组</td></tr>
+        <tr><td><span class="code">ctrl</span></td><td>对照组</td></tr>
+        <tr><td><span class="code">blank</span></td><td>空白组</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-title">ver_type（版本变更类型）</h3>
+    <table class="doc-table">
+      <thead><tr><th>值</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><span class="code">init</span></td><td>初始创建</td></tr>
+        <tr><td><span class="code">bid_change</span></td><td>出价修改</td></tr>
+        <tr><td><span class="code">layer_adjust</span></td><td>分层调整</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ====== 变更记录 ====== -->
+<span class="section-anchor" id="changelog"></span>
+<div class="section">
+  <h2 class="sec-title mod-global"><span class="sec-num">✦</span>变更记录</h2>
+  <div class="card">
+    <div class="changelog-item">
+      <span class="cl-date">2026-07-02</span>
+      <span class="cl-badge cl-feat">新增</span>
+      <span class="cl-text">v1.0 初版发布，基于 Demo + PRD v2.0，覆盖 RTAID / 实验 / 策略 三大模块共 86 个埋点事件。</span>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:20px 0 40px;color:#bbb;font-size:12px">
+  天渠 RTA 管理平台埋点方案 v1.0 · 2026-07-02 · 内部文档
+</div>
+
+</main>
+
+<button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
+
+<script>
+const navItems = document.querySelectorAll('.nav-item');
+const anchors  = document.querySelectorAll('.section-anchor');
+function updateNav() {
+  let current = '';
+  anchors.forEach(el => { if (window.scrollY + 90 >= el.offsetTop) current = el.id; });
+  navItems.forEach(item => {
+    const href = item.getAttribute('href');
+    item.classList.toggle('active', href === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateNav, { passive: true });
+updateNav();
+</script>
+</body>
+</html>

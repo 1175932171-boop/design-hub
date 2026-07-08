@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>天渠 RTA 系统文档中心</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh;}
+.hd{background:linear-gradient(135deg,#0f172a,#1e3a8a 55%,#312e81);padding:32px 48px 28px;display:flex;align-items:center;gap:18px;}
+.hd svg{width:48px;height:48px;flex-shrink:0;}
+.hd-info h1{color:#fff;font-size:22px;font-weight:800;letter-spacing:.04em;}
+.hd-info p{color:rgba(255,255,255,.55);font-size:12px;margin-top:4px;}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 56px;}
+.section-title{font-size:13px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;margin-top:32px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07);text-decoration:none;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s;}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12);}
+.card-hd{padding:14px 18px 12px;display:flex;align-items:center;gap:10px;}
+.c-icon{font-size:22px;line-height:1;}
+.c-title{font-size:14px;font-weight:800;color:#1e293b;line-height:1.3;}
+.c-sub{font-size:11px;color:#64748b;margin-top:2px;}
+.card-bd{padding:10px 18px 14px;font-size:12px;color:#475569;line-height:1.7;border-top:1px solid #f1f5f9;flex:1;}
+.card-ft{padding:8px 18px;background:#f8fafc;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;}
+.arrow{font-size:13px;}
+
+/* 色彩主题 */
+.t-blue .card-hd{background:#eff6ff;}.t-blue .card-ft{color:#1d4ed8;}
+.t-green .card-hd{background:#f0fdf4;}.t-green .card-ft{color:#059669;}
+.t-purple .card-hd{background:#faf5ff;}.t-purple .card-ft{color:#7c3aed;}
+.t-amber .card-hd{background:#fffbeb;}.t-amber .card-ft{color:#d97706;}
+.t-slate .card-hd{background:#f8fafc;}.t-slate .card-ft{color:#475569;}
+/* Demo 大入口 */
+.demo-banner{display:flex;align-items:center;gap:20px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border-radius:12px;padding:20px 28px;text-decoration:none;margin-bottom:0;box-shadow:0 4px 14px rgba(29,78,216,.25);transition:transform .15s,box-shadow .15s;}
+.demo-banner:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(29,78,216,.35);}
+.db-icon{font-size:36px;flex-shrink:0;}
+.db-info h2{color:#fff;font-size:16px;font-weight:800;}
+.db-info p{color:rgba(255,255,255,.75);font-size:12px;margin-top:3px;}
+.db-arrow{margin-left:auto;background:rgba(255,255,255,.2);color:#fff;padding:8px 18px;border-radius:6px;font-size:12px;font-weight:700;flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="hd">
+  <svg viewBox="0 0 80 80" fill="none">
+    <defs><linearGradient id="G" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient></defs>
+    <path d="M14 65L14 37L40 14L66 37L66 65" stroke="url(#G)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M27 65L27 48L40 35L53 48L53 65" fill="url(#G)" opacity=".75"/>
+  </svg>
+  <div class="hd-info">
+    <h1>天渠 RTA 系统文档中心</h1>
+    <p>架构设计 · 策略文档 · 交互演示 · 迁移方案</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="section-title">管理平台</div>
+  <a class="demo-banner" href="tianqu-rta-demo.html">
+    <span class="db-icon">🖥️</span>
+    <div class="db-info">
+      <h2>RTA 管理平台 Demo</h2>
+      <p>完整交互演示 · RTAID 管理 · RTA 实验管理 · RTA 策略管理 · 实验报告与推全</p>
+    </div>
+    <span class="db-arrow">→ 打开 Demo</span>
+  </a>
+
+  <div class="section-title">核心文档</div>
+  <div class="cards">
+
+    <a class="card t-green" href="tianqu-rta-architecture.html">
+      <div class="card-hd">
+        <span class="c-icon">🏗️</span>
+        <div><div class="c-title">RTA 系统架构图</div><div class="c-sub">五层架构设计</div></div>
+      </div>
+      <div class="card-bd">按外部接入层 → 用户感知层 → 功能服务层 → 数据层 → 模型层分层展示，含在线出价完整链路。</div>
+      <div class="card-ft"><span class="arrow">→</span> 查看架构图</div>
+    </a>
+
+    <a class="card t-purple" href="tianqu-rta-strategy-design.html">
+      <div class="card-hd">
+        <span class="c-icon">📐</span>
+        <div><div class="c-title">RTA 策略结构设计文档</div><div class="c-sub">内外双层结构 · 实验原则</div></div>
+      </div>
+      <div class="card-bd">内层人群规则标签出价矩阵 + 外层算法模型版本迭代，含三大策略原则与分层哈希保障机制。</div>
+      <div class="card-ft"><span class="arrow">→</span> 查看文档</div>
+    </a>
+
+    <a class="card t-blue" href="rta-traffic-splitting.html">
+      <div class="card-hd">
+        <span class="c-icon">🧪</span>
+        <div><div class="c-title">RTA 实验结构设计</div><div class="c-sub">宙斯分桶 · 实验组对照组</div></div>
+      </div>
+      <div class="card-bd">
+        <ol style="padding-left:15px;line-height:2.1;margin:0;">
+          <li>全局使用 <strong>deviceid</strong> 分流，分流通过<strong>宙斯实验平台</strong>分桶</li>
+          <li>不同分桶可对应不同比例的<strong>分流流量</strong></li>
+          <li>RTA 读取<strong>宙斯实验配置</strong>，以宙斯分桶 ID 关联 RTA 实验</li>
+          <li>配置实验时自动划分<strong>实验组</strong>与<strong>对照组</strong></li>
+        </ol>
+      </div>
+      <div class="card-ft"><span class="arrow">→</span> 查看分流机制</div>
+    </a>
+
+    <a class="card t-amber" href="tianqu-rta-migration.html">
+      <div class="card-hd">
+        <span class="c-icon">📋</span>
+        <div><div class="c-title">RTA 架构迁移方案</div><div class="c-sub">v2.0 单跳直连迁移</div></div>
+      </div>
+      <div class="card-bd">从三跳串联到单跳直连的完整迁移方案，含两阶段实施路径、三大闭环设计、双层实验机制。</div>
+      <div class="card-ft"><span class="arrow">→</span> 查看方案</div>
+    </a>
+
+  </div>
+
+  <div class="section-title">其他文档</div>
+  <div class="cards">
+
+    <a class="card t-slate" href="rta-architecture-flowchart.html">
+      <div class="card-hd">
+        <span class="c-icon">🔄</span>
+        <div><div class="c-title">RTA 架构流程图</div><div class="c-sub">横版三层流程</div></div>
+      </div>
+      <div class="card-bd">RTA 三层架构横向流程图，展示流量层 → 实验层 → 策略层的完整数据流与出价链路。</div>
+      <div class="card-ft"><span class="arrow">→</span> 查看流程图</div>
+    </a>
+
+    <a class="card t-slate" href="rta-traffic-splitting.html">
+      <div class="card-hd">
+        <span class="c-icon">🪣</span>
+        <div><div class="c-title">RTA 分流机制设计</div><div class="c-sub">分桶均匀性保障</div></div>
+      </div>
+      <div class="card-bd">RTA 实验分流机制详解，含分层哈希算法、初始浓度一致性校验方法。</div>
+      <div class="card-ft"><span class="arrow">→</span> 查看文档</div>
+    </a>
+
+  </div>
+
+</div>
+</body>
+</html>
