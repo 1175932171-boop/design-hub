@@ -70,6 +70,7 @@ section { margin-bottom: 0; }
   <a href="#forecast">④ 花费预估与校验</a>
   <span class="group-label">规则约束</span>
   <a href="#rules">⑤ 规则约束层</a>
+  <a href="#experiment">⑥ 实验方案优化</a>
   <span class="group-label">工程落地</span>
   <a href="#engineering">工程架构</a>
   <a href="#metrics">监控指标</a>
@@ -78,7 +79,7 @@ section { margin-bottom: 0; }
 
 <main class="main">
   <h1>信息流广告预算智能分配系统</h1>
-  <p class="subtitle">设计方案 · v1.0 &nbsp;|&nbsp; 覆盖渠道：头条 / 广点通 / 快手 &nbsp;|&nbsp; 投放目标：APP 下载新客获取</p>
+  <p class="subtitle">设计方案 · v1.3 &nbsp;|&nbsp; 覆盖渠道：头条 / 广点通 / 快手 &nbsp;|&nbsp; 投放目标：APP 下载新客获取 &nbsp;|&nbsp; 新增：固定成本约束下的预算-转化曲线</p>
 
   <!-- ========== 系统概述 ========== -->
   <section id="overview">
@@ -88,9 +89,12 @@ section { margin-bottom: 0; }
       <li><strong>渠道内账户不均衡</strong>：同一渠道下不同账户跑量效果差异显著，需基于渠道视角合理分配各账户预算；</li>
       <li><strong>渠道间 ROI 不均衡</strong>：全局大盘不同渠道 ROI 效果不同，需基于全局视角动态分配渠道预算。</li>
     </ul>
-    <p>核心建设思路：将预算分配抽象为<strong>流量池最优化分解问题</strong>，通过建立"预算 - 成本 - 转化"三者的预估模型，将充沛预算优先分配给能跑量、能带来有效目标转化的账户和计划。</p>
+    <p>核心建设思路：将预算分配抽象为<strong>流量池最优化分解问题</strong>，通过建立"预算 - 成本 - 转化"三者的预估模型，将充沛预算优先分配给能跑量、能带来有效目标转化的账户和计划。建模时必须锚定一个前提：<strong>成本/CPA 是固定外生约束，不随预算变化而变化</strong>；系统衡量的是在固定成本约束下，预算变化带来的转化数变化，而不是预算和成本同时变化后的混合结果。</p>
     <div class="callout cb-blue">
-      <strong>目标函数</strong>：在总预算约束下，最大化全链路目标转化数（新客 APP 下载激活），等价于实现最优 ROI。
+      <strong>目标函数</strong>：在总预算与固定 CPA 成本约束下，最大化全链路目标转化数（新客 APP 下载激活）。其中 CPA 不作为优化变量，预算优化只解释转化数随预算变化的响应曲线。
+    </div>
+    <div class="callout cb-yellow">
+      <strong>识别边界</strong>：若 CPA、出价或成交成本同时发生变化，则转化波动无法单独归因于预算调节。此类样本需进入协变量控制、分层分析或剔除，不参与主响应曲线拟合。
     </div>
   </section>
 
@@ -145,16 +149,26 @@ section { margin-bottom: 0; }
   <!-- ========== 模块二：S 曲线模型 ========== -->
   <section id="model">
     <h2>模块二："预算 - 成本 - 转化" S 曲线预估模型</h2>
-    <p><strong>核心假设</strong>：在固定 CPA 目标成本约束下，目标转化数随预算增大呈 S 型增长——初期边际效率高（预算充裕、流量充足），后期因竞争加剧边际效率递减，最终趋于饱和（流量容量上限 L）。</p>
+    <p><strong>核心假设</strong>：在固定 CPA 目标成本约束下，成本是外生常量，目标转化数随预算增大呈 S 型增长——初期边际效率高（预算充裕、流量充足），后期因可触达优质流量逐步消耗，边际效率递减，最终趋于饱和（流量容量上限 L）。因此，本模块拟合的是 <code>Conv(B | CPA = CPA_fixed)</code>，而不是同时让预算 B 与成本 CPA 共同变化。</p>
+
+    <h3>成本固定约束：只衡量预算对转化的影响</h3>
+    <div class="formula-box">
+      <div class="ftitle">建模对象</div>
+      <div class="fexpr">Conv = f(B | CPA = CPA_fixed, bid = bid_fixed, target = target_fixed)</div>
+      <div class="fnote">CPA、出价目标、投放目标、人群定向等作为固定条件或控制变量进入模型；主曲线只描述预算 B 增减时，转化数 Conv 的响应关系。</div>
+      <div class="ftitle" style="margin-top:12px">不纳入主曲线的混合效应</div>
+      <div class="fexpr">ΔConv ≠ f(ΔB, ΔCPA) 的混合解释</div>
+      <div class="fnote">如果 CPA 同时下降或上升，转化变化可能来自成本改善/恶化，而非预算分配本身。此时不能直接用该样本拟合预算响应曲线。</div>
+    </div>
 
     <h3>S 曲线转化预估公式</h3>
     <div class="formula-box">
-      <div class="ftitle">转化数预估（Logistic S 曲线）</div>
-      <div class="fexpr">Conv(B) = L / ( 1 + exp( −r · (B − B₀) ) )</div>
+      <div class="ftitle">转化数预估（固定成本约束下的 Logistic S 曲线）</div>
+      <div class="fexpr">Conv(B | CPA_fixed) = L / ( 1 + exp( −r · (B − B₀) ) )</div>
       <div class="fnote">
-        L  ：转化容量上限（历史最大转化 × 放大系数 α，建议 α = 1.2）<br>
-        r  ：增长斜率（拟合参数，反映预算对转化的敏感程度）<br>
-        B₀ ：S 曲线拐点预算（边际效率最大处，即效率斜率 k 取最大值对应的预算点）
+        L  ：固定 CPA 约束下的转化容量上限（历史最大转化 × 放大系数 α，建议 α = 1.2）<br>
+        r  ：增长斜率（拟合参数，反映预算对转化的敏感程度，不解释 CPA 变化）<br>
+        B₀ ：S 曲线拐点预算（固定成本下边际效率最大处，即效率斜率 k 取最大值对应的预算点）
       </div>
     </div>
 
@@ -369,6 +383,138 @@ section { margin-bottom: 0; }
       <div class="ftitle" style="margin-top:12px">流量修正花费预估（Module 4 基础上修订，引入分时流量）</div>
       <div class="fexpr">Ŝ_a(t) = B_a × η_a_base × T_c(t) × γ(t) × β_a</div>
       <div class="fnote">T_c(t)：当前时段流量指数；γ(t)：时段竞争度系数（随时段动态变化）；三条规则共同作用：规则三提升 η 精度 → 规则一准确识别低效账户 → 规则二保证只调预算不动出价</div>
+    </div>
+  </section>
+
+  <!-- ========== 模块六：实验方案优化 ========== -->
+  <section id="experiment">
+    <h2>模块六：预算分配实验方案优化</h2>
+    <p>现有 matched-pair RCT 能较好解决实验前 A/B 账户基线不一致问题，但如果实验单元长期停留在<strong>账户粒度</strong>，仍会受到媒体流量分层、账户跑量能力漂移、账户基建规模不足、渠道级预算外推不足等因素影响。优化方向是将实验从“账户对账户”升级为<strong>账户配对校准 + 账户内广告组/计划随机化 + 渠道层因果评估 + 响应曲线预算外推</strong>的混合实验框架。</p>
+
+    <div class="callout cb-purple">
+      <strong>核心结论</strong>：账户配对不再承担全部因果识别责任，而是作为实验前的均衡校准层；真正验证预算调节净效果时，优先在同一账户内拆分广告组/计划做随机化，最大限度控制账户质量、媒体账户权重、行业流量池与素材账户资产差异。进一步参考 Meridian 的 ROI / mROI / 响应曲线思路，将“实验验证增量效果”与“未来预算应该投向哪里”拆成两个问题：前者用 A/B、DiD、CUPED 估计净增量，后者用响应曲线和边际 ROI 判断预算是否继续加、减或转移。
+    </div>
+
+    <h3>6.1 现有账户粒度实验的主要偏差来源</h3>
+    <table>
+      <thead><tr><th>痛点</th><th>对实验结论的影响</th><th>优化原则</th></tr></thead>
+      <tbody>
+        <tr><td>账户跑量能力漂移</td><td>即使实验前消耗、曝光、ROI 接近，实验中媒体分发、账户权重、流量层级也可能发生分化，导致 uplift 混入账户自然波动。</td><td>将同账户内可比广告组/计划作为主实验单元，账户固定效应天然抵消。</td></tr>
+        <tr><td>账户基建成本过高</td><td>若要用账户级样本验证绝对 uplift，需要大量独立账户，实际投放基建与预算成本都很高。</td><td>把样本量从账户数扩展到广告组/计划数，提高实验功效。</td></tr>
+        <tr><td>只回答账户内预算怎么分</td><td>结论偏向“一个账户内好计划多给预算”，难以回答“整个渠道下多账户怎么分预算”。</td><td>实验分为计划级因果验证与渠道级外推评估两层。</td></tr>
+        <tr><td>外部干扰无法完全隔离</td><td>大盘波动、素材上新、出价变更、定向变化会污染 ROI/CPA 对比。</td><td>引入冻结窗口、协变量记录、差分中的差分（DiD）和 CUPED 降噪。</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.2 优化后的三层实验结构</h3>
+    <div class="arch-box">
+      <div class="arch-row">
+        <div class="arch-tag">校准层</div>
+        <div class="arch-desc">继续使用账户粒度 matched-pair RCT 做实验前分层：按渠道、账户历史消耗、曝光、ROI/CPA、转化规模、账户生命周期、素材活跃度、流量层级进行匹配，保证实验账户池与对照账户池具备可比性。</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">主实验层</div>
+        <div class="arch-desc">在每个入选账户内部，将广告组/计划按历史表现配对后随机分为 A/B：A 组启用预算 agent 调节，B 组保持原预算策略或仅做安全兜底。这样可在同账户内比较预算迁移带来的净增益。</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">外推层</div>
+        <div class="arch-desc">在渠道维度汇总所有账户的 A/B 结果，用 DiD、合成控制或分层贝叶斯模型评估渠道级预算重分配收益，判断算法是否能支撑跨账户、跨渠道预算迁移。</div>
+      </div>
+    </div>
+
+    <h3>6.3 推荐实验分组方式</h3>
+    <table>
+      <thead><tr><th>层级</th><th>实验组 A</th><th>对照组 B</th><th>核心控制变量</th></tr></thead>
+      <tbody>
+        <tr><td>账户池</td><td>入选 matched-pair 中一侧账户</td><td>另一侧相似账户</td><td>渠道、账户生命周期、历史消耗、ROI/CPA、转化量、素材活跃度、流量层级</td></tr>
+        <tr><td>账户内广告组/计划</td><td>启用预算 agent：预算从低边际效率计划迁移到高边际效率计划</td><td>保持原预算节奏：不做主动预算迁移，仅保留超消/未消耗安全保护</td><td>同账户、同渠道、同出价策略、同素材池窗口、同投放目标</td></tr>
+        <tr><td>渠道汇总</td><td>聚合所有实验计划与账户预算变动</td><td>聚合所有对照计划与账户自然波动</td><td>日期固定效应、渠道大盘流量、节假日、素材更换、出价变更</td></tr>
+      </tbody>
+    </table>
+
+    <div class="formula-box">
+      <div class="ftitle">推荐主评估模型：分层 DiD + CUPED 降噪</div>
+      <div class="fexpr">Uplift = (Y_A_after − Y_A_before) − (Y_B_after − Y_B_before)</div>
+      <div class="fexpr" style="margin-top:8px">Y_adj = Y_after − θ · (Y_before − mean(Y_before))</div>
+      <div class="fnote">Y 优先选择固定 CPA/固定出价策略下的目标转化数或利润贡献；若使用 ROI、CPA 反向指标，必须确认成本口径在实验窗口内稳定。CUPED 使用实验前窗口指标降噪，适合广告指标日波动较大的场景。</div>
+    </div>
+
+    <h3>6.4 预算调节动作与安全边界</h3>
+    <ul>
+      <li><strong>预算动作只作用于实验组计划</strong>：A 组计划允许在账户内预算池中互相迁移，B 组计划不参与主动迁移，避免对照组被算法污染。</li>
+      <li><strong>账户总预算保持一致</strong>：主实验阶段优先固定账户日总预算，只验证“账户内预算怎么分”；若要验证跨账户分配，进入外推层单独评估。</li>
+      <li><strong>素材与出价冻结窗口</strong>：实验前后至少设置 3～7 天冻结或记录窗口，素材大换、出价策略切换、定向变更须进入协变量表，严重变更的计划剔除或单独分层。</li>
+      <li><strong>低样本计划保护</strong>：近 7 日转化不足、预算不足或冷启动中的计划只进入观察层，不直接参与强随机，避免预算被过早剥夺。</li>
+      <li><strong>预算迁移上限</strong>：单计划日预算调整不超过昨日预算的 30%～50%，账户内 A 组总预算不突破实验前约束，防止算法引发学习期震荡。</li>
+    </ul>
+
+    <h3>6.5 指标体系与实验结论口径</h3>
+    <table>
+      <thead><tr><th>指标类型</th><th>推荐指标</th><th>结论用途</th></tr></thead>
+      <tbody>
+        <tr><td>主指标</td><td>固定 CPA 约束下的目标转化数 uplift、利润贡献 uplift、ROI uplift、CPA 稳定性</td><td>判断预算 agent 是否在不改变成本的前提下带来净增益。</td></tr>
+        <tr><td>过程指标</td><td>预算消耗率、预算迁移金额、迁移后高效计划消耗承接率、学习期波动</td><td>判断预算是否真的迁移到了可承接且有效的计划。</td></tr>
+        <tr><td>稳健性指标</td><td>分渠道、分账户生命周期、分素材类型、分流量层级的异质性 uplift</td><td>判断方案是否能从账户内实验外推到渠道级预算分配。</td></tr>
+        <tr><td>风险指标</td><td>CPA 恶化比例、账户消耗塌陷、对照污染率、预算空转率</td><td>判断是否触发回滚或缩小实验范围。</td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.6 引入响应曲线的增量效果衡量</h3>
+    <p>参考 Meridian 的后建模分析思路，预算实验不应只回答“实验组 ROI 是否高于对照组”，还要回答“如果未来继续增加或减少预算，增量收益会如何变化”。因此，在账户内 A/B 与渠道层 DiD 得到净增量后，需要为每个渠道、账户或计划簇拟合<strong>支出 → 增量效果</strong>响应曲线。</p>
+    <table>
+      <thead><tr><th>概念</th><th>在本方案中的定义</th><th>使用方式</th></tr></thead>
+      <tbody>
+        <tr><td>增量效果</td><td>在固定 CPA/固定出价策略下，实验组相对反事实对照多带来的目标转化、收入或利润贡献。</td><td>用 A/B、DiD、CUPED 或合成控制估计，作为响应曲线的被解释变量。</td></tr>
+        <tr><td>ROI</td><td>历史窗口内增量效果 / 实际花费，衡量过去预算是否有效。</td><td>用于识别历史优质渠道或账户，但不直接作为未来加预算的唯一依据。</td></tr>
+        <tr><td>mROI</td><td>在当前预算水平上，每新增 1 元预算带来的增量效果。</td><td>用于判断是否已接近饱和；mROI 高的单元优先承接增量预算。</td></tr>
+        <tr><td>响应曲线</td><td>在不同预算倍数下，预测增量效果如何变化的曲线。</td><td>用于模拟 +10%、+20%、-10% 等预算变化后的收益和边际递减点。</td></tr>
+      </tbody>
+    </table>
+
+    <div class="formula-box">
+      <div class="ftitle">响应曲线与边际收益定义（业务化表达）</div>
+      <div class="fexpr">IncEffect_u(B | CPA_fixed) = E[ Y_u(B, CPA_fixed) − Y_u(B_base, CPA_fixed) | controls ]</div>
+      <div class="fexpr" style="margin-top:8px">ROI_u(B) = IncEffect_u(B) / Cost_u(B)</div>
+      <div class="fexpr" style="margin-top:8px">mROI_u(B) ≈ [ IncEffect_u(B × (1 + δ)) − IncEffect_u(B) ] / [ B × δ ]</div>
+      <div class="fnote">u 可以是渠道、账户、计划簇或策略桶；B_base 是对照预算或无调节预算；δ 建议取 1%～5%。ROI 看固定成本条件下的历史平均收益，mROI 看当前预算点继续加钱的边际转化收益。</div>
+    </div>
+
+    <h3>6.7 响应曲线驱动的预算优化闭环</h3>
+    <div class="arch-box">
+      <div class="arch-row">
+        <div class="arch-tag">估计</div>
+        <div class="arch-desc">先通过账户内随机化和渠道层 DiD 得到各单元的净增量效果，避免把大盘波动、素材变化、媒体分发漂移误判为预算策略收益。</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">拟合</div>
+        <div class="arch-desc">将不同预算水平下的增量效果拟合为响应曲线；预算水平可来自真实实验扰动、历史自然波动、灰度扩量，或在可信区间内做小幅模拟。</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">决策</div>
+        <div class="arch-desc">比较各渠道/账户/计划簇当前预算点的 mROI：mROI 高且未饱和的单元承接预算，mROI 低于目标门槛或明显低于平均 ROI 的单元减少预算。</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-tag">验证</div>
+        <div class="arch-desc">下一轮实验只放开有限预算增量，验证响应曲线预测的 uplift 与实际 uplift 是否一致，再决定是否继续扩量。</div>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr><th>预算决策场景</th><th>判定逻辑</th><th>执行建议</th></tr></thead>
+      <tbody>
+        <tr><td>继续加预算</td><td>mROI 高于目标门槛，且响应曲线仍处于未饱和区。</td><td>在安全上限内加预算，优先从低 mROI 单元迁移。</td></tr>
+        <tr><td>保持预算</td><td>ROI 较好但 mROI 已接近门槛，继续加钱边际收益有限。</td><td>保持当前预算，观察素材、出价或人群变化是否带来新承接空间。</td></tr>
+        <tr><td>减少预算</td><td>mROI 明显低于目标门槛，且响应曲线进入边际递减区。</td><td>回收预算进入渠道/账户预算池，转投更高 mROI 单元。</td></tr>
+        <tr><td>禁止外推</td><td>历史预算几乎无波动，或模拟预算远高于历史最大预算。</td><td>不直接按曲线大幅扩量，只允许小步灰度验证。</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout cb-yellow">
+      <strong>使用限制</strong>：响应曲线依赖反事实估计，且必须建立在 CPA/出价策略相对固定的前提下；若历史支出长期固定，支出为 0 或高于历史上限的点都存在外推风险；短周期 ROI 还会受到广告滞后效应影响。因此实验报告中必须同时展示估计区间、历史支出覆盖范围、CPA 稳定性、素材/出价变更记录和曲线外推倍数。
+    </div>
+
+    <div class="callout cb-green">
+      <strong>最终实验判定</strong>：若账户内计划级 A/B 显示稳定正 uplift，渠道层 DiD 结果在不同账户生命周期、素材类型、流量层级下方向一致，且响应曲线显示增量预算仍处于正 mROI 区间，则说明预算调节策略不仅能优化单账户内计划预算，也具备扩展到渠道级多账户预算分配的依据。
     </div>
   </section>
 
